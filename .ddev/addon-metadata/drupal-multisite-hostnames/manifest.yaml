@@ -1,0 +1,9 @@
+name: drupal-multisite-hostnames
+repository: lpeabody/ddev-drupal-multisite-hostnames
+version: "0.2"
+install_date: "2026-01-27T18:53:22Z"
+project_files:
+    - commands/host/multisite-start
+    - drupal_multisite/sites.ddev_multisite.php
+global_files: []
+removal_actions: []

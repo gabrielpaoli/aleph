@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#ddev-generated
+
+cat > .ddev/config.drupal_multisite_hosts.yaml <<EOL
+#ddev-generated
+additional_hostnames:
+  - '*.$DDEV_SITENAME'
+EOL
+
+ddev start "$@"

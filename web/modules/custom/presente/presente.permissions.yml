@@ -1,0 +1,15 @@
+access preceptor form:
+  title: 'Acceder al formulario de presentes'
+  description: 'Permite a los usuarios completar el formulario de presentes.'
+
+administer presente:
+  title: 'Administer presentes'
+  restrict access: true
+view presente:
+  title: 'View presente'
+edit presente:
+  title: 'Edit presente'
+delete presente:
+  title: 'Delete presente'
+create presente:
+  title: 'Create presente'

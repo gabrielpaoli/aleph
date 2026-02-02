@@ -1,0 +1,5 @@
+presente.add_form:
+  title: 'Add presente'
+  route_name: entity.presente.add_form
+  appears_on:
+    - entity.presente.collection

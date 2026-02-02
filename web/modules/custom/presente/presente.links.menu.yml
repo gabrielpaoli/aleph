@@ -1,0 +1,11 @@
+entity.presente.settings:
+  title: 'Presente'
+  description: 'Configure a Presente entity type.'
+  route_name:  entity.presente.settings
+  parent: system.admin_structure
+
+entity.presente.collection:
+  title: 'Presentes'
+  description: 'List of presentes.'
+  route_name: entity.presente.collection
+  parent: system.admin_content

@@ -1,0 +1,5 @@
+name: Presente
+type: module
+description: 'Permite la creacion de la logica para el presentismo'
+core_version_requirement: ^10.3 || ^11
+version: '8.x-1.0'

@@ -1,0 +1,14 @@
+{
+  "name": "drupal/handlebars_theme_handler",
+  "type": "drupal-module",
+  "description": "Module for handling handlebars.js templates and rendering",
+  "keywords": ["Drupal"],
+  "license": "GPL-2.0+",
+  "homepage": "https://www.drupal.org/project/handlebars_theme_handler",
+  "minimum-stability": "dev",
+  "require": {
+    "xamin/handlebars.php": "^0.10.4",
+    "symfony/config": "3.*|4.*",
+    "symfony/finder": "3.*|4.*"
+  }
+}

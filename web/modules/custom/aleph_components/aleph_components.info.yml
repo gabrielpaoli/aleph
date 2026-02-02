@@ -1,0 +1,6 @@
+name: Aleph Components
+type: module
+description: 'Aleph components.'
+core_version_requirement: ^9 || ^10 || ^11
+package: Custom
+

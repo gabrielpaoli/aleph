@@ -1,0 +1,9 @@
+#ddev-generated
+services:
+  db:
+    volumes:
+      - type: bind
+        source: ../${DDEV_DOCROOT}/sites
+        target: /drupal_sites
+
+        consistency: cached

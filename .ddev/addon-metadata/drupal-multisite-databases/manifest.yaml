@@ -1,0 +1,9 @@
+name: drupal-multisite-databases
+repository: lpeabody/ddev-drupal-multisite-databases
+version: "0.1"
+install_date: "2026-01-27T18:54:09Z"
+project_files:
+    - docker-compose.drupal-multisite-databases.yaml
+    - config.drupal-multisite-databases.yaml
+global_files: []
+removal_actions: []

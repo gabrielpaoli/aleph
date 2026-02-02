@@ -1,0 +1,9 @@
+entity.presente.settings:
+  title: 'Settings'
+  route_name: entity.presente.settings
+  base_route: entity.presente.settings
+entity.presente.collection:
+  title: 'Presentes'
+  route_name: entity.presente.collection
+  base_route: system.admin_content
+  weight: 10

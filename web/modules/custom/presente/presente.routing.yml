@@ -1,0 +1,19 @@
+presente.form:
+  path: '/lista-presentes/{curso}/{anual}'
+  defaults:
+    _form: '\Drupal\presente\Form\ListaPresentesForm'
+    _title: 'Presentes'
+  requirements:
+    _permission: 'access preceptor form'
+  options:
+    parameters:
+      curso:
+        type: 'entity:node'
+
+entity.presente.settings:
+  path: 'admin/structure/presente'
+  defaults:
+    _form: '\Drupal\presente\Form\PresenteSettingsForm'
+    _title: 'Presente'
+  requirements:
+    _permission: 'administer presente'

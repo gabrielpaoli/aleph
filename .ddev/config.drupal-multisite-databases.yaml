@@ -1,0 +1,17 @@
+#ddev-generated
+hooks:
+  post-start:
+    - service: db
+      exec: |
+        #ddev-description:Create databases for each Drupal multisite.
+        # Get all directories in /drupal_sites, excluding the default and
+        # settings directories.
+        drupal_sites=$(find /drupal_sites -mindepth 1 -maxdepth 1 -type d ! -name 'default' ! -name 'settings')
+        # For each directory, create a database named after the site and grant
+        # all privileges to the db user.
+        for site in $drupal_sites; do
+          site_name=$(basename "$site")
+          echo "Creating database for $site_name, if it doesn't already exist."
+          mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS \`${site_name}\`;"
+          mysql -uroot -proot -e "GRANT ALL PRIVILEGES ON \`${site_name}\`.* TO 'db'@'%';"
+        done

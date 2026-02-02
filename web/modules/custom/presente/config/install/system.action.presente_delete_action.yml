@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - presente
+id: presente_delete_action
+label: 'Delete presentes'
+type: presente
+plugin: entity:delete_action:presente
+configuration: {  }
