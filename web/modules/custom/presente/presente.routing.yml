@@ -17,3 +17,11 @@ entity.presente.settings:
     _title: 'Presente'
   requirements:
     _permission: 'administer presente'
+
+presente_mail_admin.settings_page:
+  path: '/admin/config/enviar-ausentes-por-mail'
+  defaults:
+    _form: '\Drupal\presente\Form\PresenteAdminSendEmailForm'
+    _title: 'Enviar ausentes por mail a las familias'
+  requirements:
+    _permission: 'access preceptor form'

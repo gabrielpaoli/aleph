@@ -15,7 +15,7 @@ class BatchPresentes {
 
     $presentes = $entityStorage->loadByProperties([
       'field_fecha' => $item_id['fecha'],
-      'field_eid' => $item_id['estudiante_id'],
+      'field_estudiante' => $item_id['estudiante']->id(),
     ]);
 
     $presente = reset($presentes);
@@ -28,15 +28,15 @@ class BatchPresentes {
     }else{
       $entity = Presente::create([
           'field_presente' => $item_id['is_checked'],
-          'field_eid' => $item_id['estudiante_id'],
+          'field_estudiante' => $item_id['estudiante'],
           'field_fecha' => $item_id['fecha'],
         ]
       );
       $entity->save();
     }
 
-    $context['results'][] = $item_id["estudiante_id"];
-    $context['message'] = t('Processing item @id', ['@id' => $item_id["estudiante_id"]]);
+    $context['results'][] = $item_id["estudiante"]->id();
+    $context['message'] = t('Processing item @id', ['@id' => $item_id["estudiante"]->id()]);
   }
 
   /**

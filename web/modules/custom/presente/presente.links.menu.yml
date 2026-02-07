@@ -9,3 +9,11 @@ entity.presente.collection:
   description: 'List of presentes.'
   route_name: entity.presente.collection
   parent: system.admin_content
+
+presente_mail_admin.admin_menu_link:
+  title: 'Enviar ausentes'
+  description: 'Enviar ausentes'
+  parent: system.admin_config
+  menu_name: admin
+  route_name: presente_mail_admin.settings_page
+  weight: 100

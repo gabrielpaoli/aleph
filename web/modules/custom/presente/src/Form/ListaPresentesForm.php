@@ -2,6 +2,9 @@
 
 namespace Drupal\presente\Form;
 
+use DateInterval;
+use DatePeriod;
+use DateTime;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\node\Entity\Node;
@@ -11,49 +14,20 @@ class ListaPresentesForm extends FormBase {
     return 'presente_form';
   }
 
-  private function getDataDays($anual){
-    $date_formatter = \Drupal::service('date.formatter');
-    $anio_actual = date('Y');
-    $dias_del_anio = [];
-
-    if($anual){
-      $nombre_del_mes = '';
-      $fecha_inicio = new \DateTime("$anio_actual-01-01");
-      $fecha_fin = new \DateTime("$anio_actual-12-31");
-      $format = 'd-m';
-    }else{
-      $nombre_del_mes = $date_formatter->format(time(), 'custom', 'F', NULL, 'es');
-      $mes_actual = date('m');
-      $dias_en_el_mes_actual = date('t');
-      $fecha_inicio = new \DateTime("$anio_actual-$mes_actual-01");
-      $fecha_fin = new \DateTime("$anio_actual-$mes_actual-$dias_en_el_mes_actual");
-      $format = 'd';
-    }
-
-    while ($fecha_inicio <= $fecha_fin) {
-      $dias_del_anio[$fecha_inicio->format('Y-m-d')] = $fecha_inicio->format($format);
-      $fecha_inicio->modify('+1 day');
-    }
-
-    return [
-      'nombre_del_mes' => $nombre_del_mes,
-      'dias_del_anio' => $dias_del_anio,
-    ];
-
-  }
-
   public function buildForm(array $form, FormStateInterface $form_state, $curso = NULL, $anual = NULL) {
+
     //Hago un check para ver si el curso existe
     if($curso->getType() != 'curso'){
       $this->messenger()->addStatus($this->t('No es un curso'));
       return NULL;
     }else{
       $estudiantesIds = $curso->get('field_estudiantes')->getValue();
+      $presente = \Drupal::service('presente.data');
     }
 
     //Obtengo los datos
-    $estudiantes = $this->getEstudiantes($estudiantesIds);
-    $presentes = $this->getPresentes($estudiantesIds);
+    $estudiantes = $presente->getEstudiantes($estudiantesIds);
+    $presentes = $presente->getPresentes($estudiantesIds);
     $dataDays = $this->getDataDays($anual);
 
     //Creo el form
@@ -61,7 +35,6 @@ class ListaPresentesForm extends FormBase {
     $header += array_map(function ($dia) {
       return ['data' => $dia, 'class' => [ 'rotate-text' ]];
     }, $dataDays['dias_del_anio']);
-
 
     $form['asistencia'] = [
       '#type' => 'table',
@@ -102,7 +75,6 @@ class ListaPresentesForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $values = $form_state->getValue('asistencia');
     $info = $this->getInfoList($values);
-
     $operations = [];
 
     for ($i = 0; $i < count($info); $i++) {
@@ -132,58 +104,68 @@ class ListaPresentesForm extends FormBase {
         $info[] = [
           "fecha" => $fecha,
           "is_checked" => $is_checked,
-          "estudiante_id" => $estudiante_id,
+          "estudiante" => Node::load($estudiante_id),
         ];
       }
     }
     return $info;
   }
 
-  private function getIds($estudiantesIds){
-    $ids = [];
-    foreach($estudiantesIds as $estudianteId){
-      $ids[] = $estudianteId["target_id"];
-    }
-    return $ids;
-  }
+  /**
+   * @throws \DateMalformedStringException
+   * @throws \DateMalformedPeriodStringException
+   */
+  private function getDiasExcluidos(){
+    $days = [];
 
-  private function getEstudiantes($estudiantesIds){
-    $ids = $this->getIds($estudiantesIds);
+    $inicio = new DateTime( date('Y') . '-01-01');
+    $fin = new DateTime( date('Y') . '-02-01');
+    $intervalo = new DateInterval('P1D');
+    $periodo = new DatePeriod($inicio, $intervalo, $fin);
 
-    $estudiantesDb = Node::loadMultiple($ids);
-    $estudiantes = [];
-
-    foreach($estudiantesDb as $estudianteDb) {
-      $estudiantes[$estudianteDb->id()] = $estudianteDb->getTitle() . ' ' . $estudianteDb->get('field_apellido_s')->value;
-    }
-    return $estudiantes;
-  }
-
-  private function getPresentes($estudiantesIds){
-    $data = [];
-    $ids = $this->getIds($estudiantesIds);
-
-    $entityTypeManager = \Drupal::entityTypeManager();
-    $entityStorage = $entityTypeManager->getStorage('presente');
-
-    $presentes = $entityStorage->loadByProperties([
-      'field_eid' => $ids,
-    ]);
-
-    foreach($presentes as $presente) {
-      $fecha = $presente->get('field_fecha')->value;
-      $present = $presente->get('field_presente')->value;
-      $eid = $presente->get('field_eid')->value;
-
-      $data[$eid][$fecha][] = [
-        'fecha' => $fecha,
-        'presente' => $present,
-        'eid' => $eid,
-      ];
+    foreach ($periodo as $fecha) {
+      $days[] = new DateTime($fecha->format('Y-m-d'));
     }
 
-    return $data;
+    $days[] = new DateTime(date('Y') . '-12-24');
+    $days[] = new DateTime(date('Y') . '-12-25');
+    $days[] = new DateTime(date('Y') . '-03-24');
+
+    return $days;
   }
 
+  private function getDataDays($anual){
+    $date_formatter = \Drupal::service('date.formatter');
+    $anio_actual = date('Y');
+    $dias_del_anio = [];
+
+    if($anual){
+      $nombre_del_mes = '';
+      $fecha_inicio = new \DateTime("$anio_actual-01-01");
+      $fecha_fin = new \DateTime("$anio_actual-12-31");
+      $format = 'd-m';
+    }else{
+      $nombre_del_mes = $date_formatter->format(time(), 'custom', 'F', NULL, 'es');
+      $mes_actual = date('m');
+      $dias_en_el_mes_actual = date('t');
+      $fecha_inicio = new \DateTime("$anio_actual-$mes_actual-01");
+      $fecha_fin = new \DateTime("$anio_actual-$mes_actual-$dias_en_el_mes_actual");
+      $format = 'd';
+    }
+
+    while ($fecha_inicio <= $fecha_fin) {
+      $diaSemana = $fecha_inicio->format('N');
+      if ($diaSemana < 6 && !in_array($fecha_inicio, $this->getDiasExcluidos())) {
+        $dias_del_anio[$fecha_inicio->format('Y-m-d')] = $fecha_inicio->format($format);
+      }
+      $fecha_inicio->modify('+1 day');
+    }
+
+    return [
+      'nombre_del_mes' => $nombre_del_mes,
+      'dias_del_anio' => $dias_del_anio,
+    ];
+
+  }
 
 }

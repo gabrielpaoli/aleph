@@ -1,0 +1,4 @@
+services:
+  presente.data:
+    class: Drupal\presente\Presente
+    arguments: ['@database', '@entity_type.manager']

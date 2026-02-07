@@ -29,7 +29,7 @@ final class PresenteListBuilder extends EntityListBuilder {
   public function buildRow(EntityInterface $entity): array {
     /** @var \Drupal\presente\PresenteInterface $entity */
     $row['id'] = $entity->id();
-    $row['id_estudiante'] = $entity->get('field_eid')->value;
+    $row['id_estudiante'] = $entity->get('field_estudiante')->entity->id();
     $row['fecha'] = $entity->get('field_fecha')->value;
     $row['presente'] = $entity->get('field_presente')->value;
     return $row + parent::buildRow($entity);

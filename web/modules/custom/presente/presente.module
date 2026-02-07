@@ -1,0 +1,15 @@
+<?php
+
+/**
+* Implements hook_mail().
+*/
+function presente_mail($key, &$message, $params) {
+  switch ($key) {
+    case 'ausentes_email':
+    $message['subject'] = t('Ausente del día');
+    $message['body'][] = $params['message'];
+    break;
+  }
+}
+
+

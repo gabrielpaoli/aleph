@@ -1,0 +1,4 @@
+services:
+  aleph_components.estudiante:
+    class: Drupal\aleph_components\Estudiante
+    arguments: ['@database', '@entity_type.manager']
