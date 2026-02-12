@@ -1,38 +1,133 @@
-// components/student/StudentProfile.jsx (versión con colores mejorados)
+// src/App.jsx
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { dummyData, ATTENDANCE_STATUS } from '../../services/dummyData';
+import { ATTENDANCE_STATUS } from '../../services/dummyData';
+import { studentService, courseService, subjectService, attendanceService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { useGrades } from '../../hooks/useGrades';
 
 const StudentProfile = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const student = dummyData.students.find(s => s.id === parseInt(studentId));
+  // Convertir el ID a número
+  const numericId = parseInt(studentId, 10);
 
-  if (!student) {
-    return (
-      <div className="p-6 text-center">
-        <h2 className="text-2xl text-red-500">Estudiante no encontrado</h2>
-        <button
-          onClick={() => navigate('/admin')}
-          className="mt-4 bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors"
-        >
-          Volver
-        </button>
-      </div>
-    );
-  }
+  // Proteger acceso: si es padre, solo puede ver su propio hijo
+  useEffect(() => {
+    if (user && user.role === 'parent' && user.studentId !== numericId) {
+      console.warn('🚫 Parent trying to access another student');
+      navigate('/estudiante');
+      return;
+    }
+  }, [user, numericId, navigate]);
 
-  const course = dummyData.courses.find(c => c.id === student.courseId);
-  const subjects = dummyData.subjects.filter(s => s.courseId === student.courseId);
+  const [student, setStudent] = useState(null);
+  const [course, setCourse] = useState(null);
+  const [subjects, setSubjects] = useState([]);
+  const [attendance, setAttendance] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Usar custom hook para calificaciones (recargable)
+  const { grades, refresh: refreshGrades } = useGrades(isNaN(numericId) ? null : numericId);
+
+  useEffect(() => {
+    if (isNaN(numericId)) {
+      console.error('❌ Invalid student ID:', studentId);
+      setError('ID de estudiante inválido');
+      setLoading(false);
+      return;
+    }
+    console.log('🔍 Loading student profile for ID:', numericId);
+    loadStudentData(numericId);
+  }, [numericId]);
+
+  const loadStudentData = async (numericId) => {
+    try {
+      setLoading(true);
+
+      // Cargar información del estudiante desde Drupal
+      console.log('📥 Fetching student from Drupal...');
+      console.log('   Endpoint:', `${import.meta.env.VITE_API_URL}/api/students/${numericId}`);
+      
+      let studentData = null;
+      try {
+        studentData = await studentService.getById(numericId);
+        console.log('✅ Student loaded:', studentData);
+      } catch (studentError) {
+        console.warn('⚠️ Could not load student, will continue with grades:', studentError.message);
+      }
+
+      // Si no encontramos el estudiante pero tenemos calificaciones, continuamos
+      if (!studentData) {
+        console.log('⚠️ No student data, but checking for grades...');
+      } else {
+        setStudent(studentData);
+
+        // Cargar curso del estudiante
+        console.log('📚 Fetching course:', studentData.courseId);
+        if (studentData.courseId) {
+          try {
+            const coursesData = await courseService.getAll();
+            const studentCourse = coursesData.find(c => c.id === studentData.courseId);
+            console.log('✅ Course loaded:', studentCourse);
+            setCourse(studentCourse);
+
+            // Cargar materias del curso
+            console.log('📝 Fetching subjects for course:', studentData.courseId);
+            const subjectsData = await subjectService.getAll();
+            const courseSubjects = subjectsData.filter(s => s.courseId === studentData.courseId);
+            console.log('✅ Subjects loaded:', courseSubjects.length);
+            setSubjects(courseSubjects);
+          } catch (courseError) {
+            console.warn('⚠️ Error loading course/subjects:', courseError.message);
+          }
+        }
+      }
+
+      // Cargar asistencias del estudiante
+      try {
+        console.log('📅 Fetching attendance for student:', numericId);
+        const attendanceData = await attendanceService.getByStudent(numericId);
+        console.log('✅ Attendance loaded:', attendanceData.length);
+        setAttendance(attendanceData);
+      } catch (attendanceError) {
+        console.warn('⚠️ Error loading attendance:', attendanceError.message);
+      }
+
+      // Si tenemos al menos calificaciones, es OK
+      if (!studentData) {
+        console.warn('⚠️ Warning: Loading with limited data (only grades available)');
+      }
+
+      setError(null);
+    } catch (err) {
+      console.error('❌ Critical error loading student data:', err);
+      console.error('   Status:', err.response?.status);
+      console.error('   Data:', err.response?.data);
+      console.error('   Message:', err.message);
+      setError('Error al cargar datos: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getGradesBySubject = (subjectId) => {
-    return dummyData.grades.filter(g => g.studentId === student.id && g.subjectId === subjectId);
+    return grades.filter(g => g.subjectId === subjectId);
   };
 
   const getAttendanceStats = () => {
-    const attendance = dummyData.attendance.filter(a => a.studentId === student.id);
+    if (!attendance || attendance.length === 0) {
+      return {
+        present: 0,
+        absent: 0,
+        halfAbsent: 0,
+        total: 0
+      };
+    }
     return {
       present: attendance.filter(a => a.status === ATTENDANCE_STATUS.PRESENT).length,
       absent: attendance.filter(a => a.status === ATTENDANCE_STATUS.ABSENT).length,
@@ -40,6 +135,196 @@ const StudentProfile = () => {
       total: attendance.length
     };
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6 flex items-center justify-center">
+        <div className="text-2xl">⏳ Cargando datos del estudiante...</div>
+      </div>
+    );
+  }
+
+  if (error && !student && grades.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-red-50 border-2 border-red-200 text-red-700 px-6 py-4 rounded-lg mb-4">
+            <h2 className="text-2xl font-bold mb-2">❌ {error || 'Estudiante no encontrado'}</h2>
+            <div className="space-y-2 text-sm">
+              <p>ID solicitado: <code className="bg-red-100 px-2 py-1 rounded">{studentId}</code></p>
+              {!student && (
+                <>
+                  <p>El estudiante con ID <strong>{studentId}</strong> no existe en la base de datos.</p>
+                  <p className="mt-4 font-semibold">💡 Opciones:</p>
+                  <ul className="list-disc list-inside ml-2">
+                    <li>Verifica que el ID sea correcto</li>
+                    <li>Verifica que el estudiante exista en Drupal</li>
+                  </ul>
+                </>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => navigate(-1)}
+            className="bg-indigo-500 text-white px-6 py-3 rounded-lg hover:bg-indigo-600 transition-colors"
+          >
+            ← Volver
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Si tenemos calificaciones pero no datos del estudiante, mostrar vista limitada
+  if (!student && grades.length > 0) {
+    // Obtener información de las calificaciones
+    const allSubjects = new Set(grades.map(g => g.subjectId));
+    const gradesBySubject = {};
+    
+    grades.forEach(grade => {
+      if (!gradesBySubject[grade.subjectId]) {
+        gradesBySubject[grade.subjectId] = [];
+      }
+      gradesBySubject[grade.subjectId].push(grade);
+    });
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-6 flex items-center justify-between">
+            <button
+              onClick={() => navigate(-1)}
+              className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-2 transition-colors"
+            >
+              <span className="text-xl">←</span> Volver
+            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={refreshGrades}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
+                title="Recargar calificaciones"
+              >
+                🔄 Actualizar
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="bg-slate-600 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors shadow-sm"
+              >
+                🖨️ Imprimir
+              </button>
+            </div>
+          </div>
+
+          {/* Information Card */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-6">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h1 className="text-4xl font-bold text-slate-800 mb-2">
+                  Estudiante #{studentId}
+                </h1>
+                <p className="text-slate-500 font-medium">Registros disponibles: {grades.length} calificaciones</p>
+              </div>
+              <div className="text-right">
+                <div className="inline-block bg-gradient-to-br from-indigo-500 to-purple-600 text-white px-6 py-4 rounded-xl shadow-lg">
+                  <div className="text-sm font-semibold opacity-90">Total de Calificaciones</div>
+                  <div className="text-3xl font-bold">{grades.length}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 border-2 border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg">
+              <p className="font-semibold text-sm">⚠️ Información limitada</p>
+              <p className="text-sm mt-1">Se están mostrando solo las calificaciones registradas. Los datos personales del estudiante no están disponibles.</p>
+            </div>
+          </div>
+
+          {/* Subjects and Grades */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-slate-800">
+              📚 Calificaciones por Materia
+            </h2>
+
+            <div className="space-y-4">
+              {Array.from(allSubjects).map(subjectId => {
+                const subjectGrades = gradesBySubject[subjectId];
+                const average = subjectGrades.length > 0
+                  ? (subjectGrades.reduce((sum, g) => sum + g.grade, 0) / subjectGrades.length).toFixed(2)
+                  : null;
+
+                const getAverageColor = (avg) => {
+                  if (!avg) return 'text-slate-400';
+                  if (avg >= 7) return 'text-emerald-600';
+                  if (avg >= 4) return 'text-amber-600';
+                  return 'text-rose-600';
+                };
+
+                const getAverageBg = (avg) => {
+                  if (!avg) return 'bg-slate-100 border-slate-200';
+                  if (avg >= 7) return 'bg-gradient-to-br from-emerald-100 to-teal-100 border-emerald-300';
+                  if (avg >= 4) return 'bg-gradient-to-br from-amber-100 to-orange-100 border-amber-300';
+                  return 'bg-gradient-to-br from-rose-100 to-pink-100 border-rose-300';
+                };
+
+                return (
+                  <div key={subjectId} className="border-2 border-slate-200 rounded-xl p-5 hover:shadow-lg transition-all hover:border-indigo-300">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-bold text-xl text-slate-800">Materia ID: {subjectId}</h3>
+                        <p className="text-sm text-slate-500 mt-1">
+                          {subjectGrades.length} {subjectGrades.length === 1 ? 'calificación' : 'calificaciones'}
+                        </p>
+                      </div>
+                      <div className={`${getAverageBg(average)} border-2 px-5 py-3 rounded-xl text-center min-w-[90px] shadow-sm`}>
+                        <div className="text-xs text-slate-600 font-bold uppercase tracking-wide">Promedio</div>
+                        <div className={`text-3xl font-bold ${getAverageColor(average)} mt-1`}>
+                          {average || 'S/N'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {subjectGrades.length > 0 ? (
+                      <div className="flex flex-wrap gap-3">
+                        {subjectGrades.map(grade => (
+                          <div
+                            key={grade.id}
+                            className="bg-slate-50 px-4 py-3 rounded-lg border-2 border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl font-bold text-slate-800">
+                                {grade.grade}
+                              </span>
+                              <span className="text-xs text-slate-500 font-medium">
+                                {new Date(grade.date).toLocaleDateString('es', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-slate-400 italic text-sm bg-slate-50 p-4 rounded-lg text-center">
+                        Sin calificaciones registradas
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
+            <p className="font-semibold">📊 Resumen</p>
+            <p className="text-sm mt-1">Total de calificaciones: <strong>{grades.length}</strong> | Materias: <strong>{allSubjects.size}</strong></p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const stats = getAttendanceStats();
   const attendancePercentage = stats.total > 0
@@ -57,12 +342,21 @@ const StudentProfile = () => {
           >
             <span className="text-xl">←</span> Volver
           </button>
-          <button
-            onClick={() => window.print()}
-            className="bg-slate-600 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors shadow-sm"
-          >
-            🖨️ Imprimir
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={refreshGrades}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
+              title="Recargar calificaciones"
+            >
+              🔄 Actualizar
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="bg-slate-600 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors shadow-sm"
+            >
+              🖨️ Imprimir
+            </button>
+          </div>
         </div>
 
         {/* Información Personal */}
@@ -72,13 +366,13 @@ const StudentProfile = () => {
               <h1 className="text-4xl font-bold text-slate-800 mb-2">
                 {student.firstName} {student.lastName}
               </h1>
-              <p className="text-slate-500 font-medium">Legajo #{student.id}</p>
+              <p className="text-slate-500 font-medium">Legajo #{student.legajo || student.id}</p>
             </div>
             <div className="text-right">
               <div className="inline-block bg-gradient-to-br from-indigo-500 to-purple-600 text-white px-6 py-4 rounded-xl shadow-lg">
                 <div className="text-sm font-semibold opacity-90">Curso</div>
-                <div className="text-3xl font-bold">{course?.name}</div>
-                <div className="text-sm opacity-90">{course?.shift}</div>
+                <div className="text-3xl font-bold">{course?.name || 'N/A'}</div>
+                <div className="text-sm opacity-90">{course?.shift || ''}</div>
               </div>
             </div>
           </div>
@@ -91,12 +385,12 @@ const StudentProfile = () => {
             <div className="bg-slate-50 rounded-lg p-4">
               <p className="text-sm text-slate-600 mb-1 font-medium">📅 Año que Cursa</p>
               <p className="font-semibold text-slate-800">
-                {course?.name?.charAt(0)}° Año
+                {course?.name?.charAt(0) || 'N/A'}° Año
               </p>
             </div>
             <div className="bg-slate-50 rounded-lg p-4">
               <p className="text-sm text-slate-600 mb-1 font-medium">🕐 Turno</p>
-              <p className="font-semibold text-slate-800">{course?.shift}</p>
+              <p className="font-semibold text-slate-800">{course?.shift || 'N/A'}</p>
             </div>
           </div>
         </div>
@@ -129,7 +423,7 @@ const StudentProfile = () => {
             </div>
           </div>
 
-          {/* Barra de progreso mejorada */}
+          {/* Barra de progreso */}
           <div className="w-full bg-slate-200 rounded-full h-6 overflow-hidden shadow-inner">
             <div
               className="bg-gradient-to-r from-emerald-400 to-teal-500 h-full transition-all duration-500 flex items-center justify-end pr-3"
@@ -156,9 +450,9 @@ const StudentProfile = () => {
           ) : (
             <div className="space-y-4">
               {subjects.map(subject => {
-                const grades = getGradesBySubject(subject.id);
-                const average = grades.length > 0
-                  ? (grades.reduce((sum, g) => sum + g.grade, 0) / grades.length).toFixed(2)
+                const subjectGrades = getGradesBySubject(subject.id);
+                const average = subjectGrades.length > 0
+                  ? (subjectGrades.reduce((sum, g) => sum + g.grade, 0) / subjectGrades.length).toFixed(2)
                   : null;
 
                 const getAverageColor = (avg) => {
@@ -181,7 +475,7 @@ const StudentProfile = () => {
                       <div>
                         <h3 className="font-bold text-xl text-slate-800">{subject.name}</h3>
                         <p className="text-sm text-slate-500 mt-1">
-                          {grades.length} {grades.length === 1 ? 'calificación' : 'calificaciones'}
+                          {subjectGrades.length} {subjectGrades.length === 1 ? 'calificación' : 'calificaciones'}
                         </p>
                       </div>
                       <div className={`${getAverageBg(average)} border-2 px-5 py-3 rounded-xl text-center min-w-[90px] shadow-sm`}>
@@ -192,9 +486,9 @@ const StudentProfile = () => {
                       </div>
                     </div>
 
-                    {grades.length > 0 ? (
+                    {subjectGrades.length > 0 ? (
                       <div className="flex flex-wrap gap-3">
-                        {grades.map(grade => (
+                        {subjectGrades.map(grade => (
                           <div
                             key={grade.id}
                             className="bg-slate-50 px-4 py-3 rounded-lg border-2 border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all"

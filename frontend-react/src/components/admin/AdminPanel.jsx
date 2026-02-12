@@ -5,6 +5,7 @@ import StudentForm from './StudentForm';
 import CourseForm from './CourseForm';
 import SubjectForm from './SubjectForm';
 import TeacherForm from './TeacherForm';
+import GradeForm from './GradeForm';
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('students');
@@ -13,6 +14,7 @@ const AdminPanel = () => {
     { id: 'students', label: 'Estudiantes', icon: '👨‍🎓', component: StudentForm },
     { id: 'courses', label: 'Cursos', icon: '📚', component: CourseForm },
     { id: 'subjects', label: 'Materias', icon: '📖', component: SubjectForm },
+    { id: 'grades', label: 'Calificaciones', icon: '⭐', component: GradeForm },
     { id: 'teachers', label: 'Docentes', icon: '👨‍🏫', component: TeacherForm }
   ];
 

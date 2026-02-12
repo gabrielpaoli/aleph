@@ -113,7 +113,7 @@ const TeacherForm = () => {
           <th className="text-left p-2">Nombre</th>
           <th className="text-left p-2">Email</th>
           <th className="text-left p-2">Materias</th>
-          <th className="text-left p-2">Acciones</th>
+          <th className="text-right p-2">Acciones</th>
         </tr>
         </thead>
         <tbody>
@@ -128,18 +128,20 @@ const TeacherForm = () => {
               }).join(', ')}
             </td>
             <td className="p-2">
-              <button
-                onClick={() => handleEdit(teacher)}
-                className="text-blue-600 hover:underline mr-2"
-              >
-                Editar
-              </button>
-              <button
-                onClick={() => handleDelete(teacher.id)}
-                className="text-red-600 hover:underline"
-              >
-                Eliminar
-              </button>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => handleEdit(teacher)}
+                  className="text-blue-600 hover:underline"
+                >
+                  Editar
+                </button>
+                <button
+                  onClick={() => handleDelete(teacher.id)}
+                  className="text-red-600 hover:underline"
+                >
+                  Eliminar
+                </button>
+              </div>
             </td>
           </tr>
         ))}

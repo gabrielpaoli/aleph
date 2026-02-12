@@ -114,8 +114,66 @@ export const courseService = {
       return Promise.resolve(dummyData.courses);
     }
     console.log('🌐 Fetching courses from API');
-    const response = await api.get('/api/courses');
-    return response.data;
+    try {
+      const response = await api.get('/api/courses');
+      console.log('✅ Courses from API:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching courses:', error);
+      throw error;
+    }
+  },
+
+  create: async (courseData) => {
+    if (USE_DUMMY_DATA) {
+      const newCourse = { ...courseData, id: Date.now() };
+      dummyData.courses.push(newCourse);
+      return Promise.resolve(newCourse);
+    }
+    console.log('🌐 Creating course in API');
+    try {
+      const response = await api.post('/api/courses', courseData);
+      console.log('✅ Course created:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error creating course:', error);
+      throw error;
+    }
+  },
+
+  update: async (id, courseData) => {
+    if (USE_DUMMY_DATA) {
+      const index = dummyData.courses.findIndex(c => c.id === id);
+      if (index !== -1) {
+        dummyData.courses[index] = { ...courseData, id };
+        return Promise.resolve(dummyData.courses[index]);
+      }
+    }
+    console.log('🌐 Updating course in API');
+    try {
+      const response = await api.patch(`/api/courses/${id}`, courseData);
+      console.log('✅ Course updated:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error updating course:', error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    if (USE_DUMMY_DATA) {
+      dummyData.courses = dummyData.courses.filter(c => c.id !== id);
+      return Promise.resolve({ success: true });
+    }
+    console.log('🌐 Deleting course from API');
+    try {
+      await api.delete(`/api/courses/${id}`);
+      console.log('✅ Course deleted');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error deleting course:', error);
+      throw error;
+    }
   }
 };
 
@@ -129,6 +187,58 @@ export const subjectService = {
     console.log('🌐 Fetching subjects from API');
     const response = await api.get('/api/subjects');
     return response.data;
+  },
+
+  create: async (subjectData) => {
+    if (USE_DUMMY_DATA) {
+      const newSubject = { ...subjectData, id: Date.now() };
+      dummyData.subjects.push(newSubject);
+      return Promise.resolve(newSubject);
+    }
+    console.log('🌐 Creating subject in API');
+    try {
+      const response = await api.post('/api/subjects', subjectData);
+      console.log('✅ Subject created:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error creating subject:', error);
+      throw error;
+    }
+  },
+
+  update: async (id, subjectData) => {
+    if (USE_DUMMY_DATA) {
+      const index = dummyData.subjects.findIndex(s => s.id === id);
+      if (index !== -1) {
+        dummyData.subjects[index] = { ...subjectData, id };
+        return Promise.resolve(dummyData.subjects[index]);
+      }
+    }
+    console.log('🌐 Updating subject in API');
+    try {
+      const response = await api.patch(`/api/subjects/${id}`, subjectData);
+      console.log('✅ Subject updated:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error updating subject:', error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    if (USE_DUMMY_DATA) {
+      dummyData.subjects = dummyData.subjects.filter(s => s.id !== id);
+      return Promise.resolve({ success: true });
+    }
+    console.log('🌐 Deleting subject from API');
+    try {
+      await api.delete(`/api/subjects/${id}`);
+      console.log('✅ Subject deleted');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error deleting subject:', error);
+      throw error;
+    }
   }
 };
 
@@ -148,6 +258,10 @@ export const attendanceService = {
     }
     const response = await api.get(`/api/attendance?studentId=${studentId}`);
     return response.data;
+  },
+
+  sendAbsenceEmails: async (date, studentIds) => {
+    return notificationService.sendAbsenceEmails(date, studentIds);
   },
 
   getByDate: async (date) => {
@@ -237,6 +351,62 @@ export const gradeService = {
     console.log(`🌐 Fetching grades for student ${studentId}`);
     const response = await api.get(`/api/grades?studentId=${studentId}`);
     return response.data;
+  },
+
+  create: async (gradeData) => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Creating dummy grade:', gradeData);
+      const newGrade = { ...gradeData, id: Date.now() };
+      dummyData.grades.push(newGrade);
+      return Promise.resolve(newGrade);
+    }
+    console.log('🌐 Creating grade via API:', gradeData);
+    try {
+      const response = await api.post('/api/grades', gradeData);
+      console.log('✅ Grade created:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error creating grade:', error);
+      throw error;
+    }
+  },
+
+  update: async (id, gradeData) => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Updating dummy grade:', id, gradeData);
+      const index = dummyData.grades.findIndex(g => g.id === id);
+      if (index !== -1) {
+        dummyData.grades[index] = { ...dummyData.grades[index], ...gradeData };
+        return Promise.resolve(dummyData.grades[index]);
+      }
+      return Promise.reject(new Error('Grade not found'));
+    }
+    console.log('🌐 Updating grade via API:', id, gradeData);
+    try {
+      const response = await api.patch(`/api/grades/${id}`, gradeData);
+      console.log('✅ Grade updated:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error updating grade:', error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Deleting dummy grade:', id);
+      dummyData.grades = dummyData.grades.filter(g => g.id !== id);
+      return Promise.resolve({ success: true });
+    }
+    console.log('🌐 Deleting grade via API:', id);
+    try {
+      const response = await api.delete(`/api/grades/${id}`);
+      console.log('✅ Grade deleted:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error deleting grade:', error);
+      throw error;
+    }
   }
 };
 

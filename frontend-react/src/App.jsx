@@ -1,4 +1,4 @@
-// App.jsx (agregar la nueva ruta)
+// src/App.jsx
 
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -8,9 +8,8 @@ import Navbar from './components/common/Navbar';
 import AttendanceTable from './components/preceptor/AttendanceTable';
 import AbsenceNotification from './components/preceptor/AbsenceNotification';
 import StudentDashboard from './components/parent/StudentDashboard';
-import StudentProfile from './components/student/StudentProfile'; // ← NUEVO
+import StudentProfile from './components/student/StudentProfile';
 import AdminPanel from './components/admin/AdminPanel';
-
 
 const PrivateRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
@@ -43,7 +42,7 @@ const AppRoutes = () => {
             <Route path="/asistencias" element={<AttendanceTable />} />
             <Route path="/notificaciones" element={<AbsenceNotification />} />
             <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/estudiante/:studentId" element={<StudentProfile />} /> {/* ← NUEVO */}
+            <Route path="/estudiante/:studentId" element={<StudentProfile />} />
           </>
         )}
 
@@ -54,6 +53,7 @@ const AppRoutes = () => {
               path="/estudiante"
               element={<StudentDashboard studentId={user.studentId} />}
             />
+            <Route path="/estudiante/:studentId" element={<StudentProfile />} />
           </>
         )}
 
