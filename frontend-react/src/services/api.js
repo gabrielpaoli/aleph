@@ -2,34 +2,66 @@
 
 import axios from 'axios';
 import { dummyData } from './dummyData';
+import config from '../config';
 
-// ❌ INCORRECTO (causa el error)
-// const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://escuela1.ddev.site';
-
-// ✅ CORRECTO para Vite
-const USE_DUMMY_DATA = import.meta.env.VITE_USE_DUMMY_DATA !== 'false';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://escuela1.ddev.site';
+const USE_DUMMY_DATA = config.useDummyData;
+const API_BASE_URL = config.apiUrl;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // ← IMPORTANTE: Enviar cookies
 });
 
-// Interceptor para agregar token de autenticación
+// Interceptor para debug
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  console.log('📤 Request:', config.method.toUpperCase(), config.url);
+  console.log('   With credentials:', config.withCredentials);
   return config;
 });
+
+// Interceptor para manejar errores
+api.interceptors.response.use(
+  (response) => {
+    console.log('✅ Response:', response.status, response.config.url);
+    return response;
+  },
+  (error) => {
+    console.error('❌ API Error:', error.response?.status, error.message);
+    console.error('   URL:', error.config?.url);
+    console.error('   Data:', error.response?.data);
+
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      console.warn('⚠️ Authentication error - user may need to login again');
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Interceptor para manejar errores
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('❌ API Error:', error.response?.status, error.message);
+    if (error.response?.status === 401) {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 // ============ ESTUDIANTES ============
 export const studentService = {
   getAll: async () => {
-    if (USE_DUMMY_DATA) return Promise.resolve(dummyData.students);
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for students');
+      return Promise.resolve(dummyData.students);
+    }
+    console.log('🌐 Fetching students from API');
     const response = await api.get('/api/students');
     return response.data;
   },
@@ -77,7 +109,11 @@ export const studentService = {
 // ============ CURSOS ============
 export const courseService = {
   getAll: async () => {
-    if (USE_DUMMY_DATA) return Promise.resolve(dummyData.courses);
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for courses');
+      return Promise.resolve(dummyData.courses);
+    }
+    console.log('🌐 Fetching courses from API');
     const response = await api.get('/api/courses');
     return response.data;
   }
@@ -86,7 +122,11 @@ export const courseService = {
 // ============ MATERIAS ============
 export const subjectService = {
   getAll: async () => {
-    if (USE_DUMMY_DATA) return Promise.resolve(dummyData.subjects);
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for subjects');
+      return Promise.resolve(dummyData.subjects);
+    }
+    console.log('🌐 Fetching subjects from API');
     const response = await api.get('/api/subjects');
     return response.data;
   }
@@ -95,7 +135,9 @@ export const subjectService = {
 // ============ ASISTENCIAS ============
 export const attendanceService = {
   getAll: async () => {
-    if (USE_DUMMY_DATA) return Promise.resolve(dummyData.attendance);
+    if (USE_DUMMY_DATA) {
+      return Promise.resolve(dummyData.attendance);
+    }
     const response = await api.get('/api/attendance');
     return response.data;
   },
@@ -118,17 +160,18 @@ export const attendanceService = {
 
   getByCourseAndMonth: async (courseId, year, month) => {
     if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for attendance');
       const students = dummyData.students.filter(s => s.courseId === courseId);
       const studentIds = students.map(s => s.id);
       const monthStr = String(month + 1).padStart(2, '0');
-      const yearStr = String(year);
       return Promise.resolve(
         dummyData.attendance.filter(a =>
           studentIds.includes(a.studentId) &&
-          a.date.startsWith(`${yearStr}-${monthStr}`)
+          a.date.startsWith(`${year}-${monthStr}`)
         )
       );
     }
+    console.log(`🌐 Fetching attendance for course ${courseId}, ${year}-${month}`);
     const response = await api.get(`/api/attendance?courseId=${courseId}&year=${year}&month=${month}`);
     return response.data;
   },
@@ -157,6 +200,7 @@ export const attendanceService = {
 
   bulkUpdate: async (attendanceArray) => {
     if (USE_DUMMY_DATA) {
+      console.log('📦 Bulk updating dummy attendance data');
       attendanceArray.forEach(att => {
         const existing = dummyData.attendance.find(
           a => a.studentId === att.studentId && a.date === att.date
@@ -169,6 +213,7 @@ export const attendanceService = {
       });
       return Promise.resolve({ success: true, count: attendanceArray.length });
     }
+    console.log('🌐 Bulk updating attendance via API');
     const response = await api.post('/api/attendance/bulk', attendanceArray);
     return response.data;
   }
@@ -177,24 +222,31 @@ export const attendanceService = {
 // ============ NOTAS ============
 export const gradeService = {
   getAll: async () => {
-    if (USE_DUMMY_DATA) return Promise.resolve(dummyData.grades);
+    if (USE_DUMMY_DATA) {
+      return Promise.resolve(dummyData.grades);
+    }
     const response = await api.get('/api/grades');
     return response.data;
   },
 
   getByStudent: async (studentId) => {
     if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for grades');
       return Promise.resolve(dummyData.grades.filter(g => g.studentId === studentId));
     }
+    console.log(`🌐 Fetching grades for student ${studentId}`);
     const response = await api.get(`/api/grades?studentId=${studentId}`);
     return response.data;
   }
 };
 
+// src/services/api.js
+
 // ============ AUTENTICACIÓN ============
 export const authService = {
   login: async (email, password) => {
     if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy authentication');
       const user = dummyData.users.find(u => u.email === email);
       if (user) {
         localStorage.setItem('authToken', 'dummy-token-' + user.id);
@@ -202,11 +254,22 @@ export const authService = {
       }
       return Promise.resolve({ success: false, error: 'Credenciales inválidas' });
     }
-    const response = await api.post('/api/auth/login', { email, password });
-    if (response.data.token) {
-      localStorage.setItem('authToken', response.data.token);
+
+    console.log('🌐 Authenticating via API');
+    try {
+      const response = await api.post('/api/auth/login', { email, password });
+      console.log('Login response:', response.data);
+
+      if (response.data.success && response.data.token) {
+        localStorage.setItem('authToken', response.data.token);
+        return response.data;
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Login API error:', error);
+      throw error;
     }
-    return response.data;
   },
 
   logout: async () => {
@@ -214,8 +277,34 @@ export const authService = {
     if (USE_DUMMY_DATA) {
       return Promise.resolve({ success: true });
     }
-    const response = await api.post('/api/auth/logout');
-    return response.data;
+
+    try {
+      const response = await api.post('/api/auth/logout');
+      return response.data;
+    } catch (error) {
+      console.error('Logout error:', error);
+      return { success: false };
+    }
+  },
+
+  getCurrentUser: async () => {
+    if (USE_DUMMY_DATA) {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        const userId = parseInt(token.replace('dummy-token-', ''));
+        const user = dummyData.users.find(u => u.id === userId);
+        return Promise.resolve(user);
+      }
+      return Promise.resolve(null);
+    }
+
+    try {
+      const response = await api.get('/api/auth/me');
+      return response.data;
+    } catch (error) {
+      console.error('Get current user error:', error);
+      throw error;
+    }
   }
 };
 
@@ -223,6 +312,7 @@ export const authService = {
 export const notificationService = {
   sendAbsenceEmails: async (date, studentIds) => {
     if (USE_DUMMY_DATA) {
+      console.log('📦 Simulating email sending');
       console.log('Enviando emails de ausencia:', { date, studentIds });
       return Promise.resolve({
         success: true,
@@ -230,6 +320,7 @@ export const notificationService = {
         message: `${studentIds.length} emails enviados`
       });
     }
+    console.log('🌐 Sending emails via API');
     const response = await api.post('/api/notifications/absence', { date, studentIds });
     return response.data;
   }

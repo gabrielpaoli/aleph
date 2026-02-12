@@ -1,0 +1,7 @@
+send notifications:
+  title: 'Send notifications'
+  description: 'Allow users to send email notifications'
+
+access school system api:
+  title: 'Access School System API'
+  description: 'Allow access to School System REST API'

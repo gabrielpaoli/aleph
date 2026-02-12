@@ -1,0 +1,16 @@
+name: 'School System'
+type: module
+description: 'Sistema de gestión escolar con API REST para React'
+core_version_requirement: ^11
+package: 'Custom'
+
+dependencies:
+  - drupal:node
+  - drupal:user
+  - drupal:field
+  - drupal:text
+  - drupal:datetime
+  - drupal:options
+  - drupal:rest
+  - drupal:serialization
+  - drupal:basic_auth

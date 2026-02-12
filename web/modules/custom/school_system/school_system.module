@@ -1,0 +1,43 @@
+<?php
+
+/**
+ * @file
+ * School System module file.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function school_system_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.school_system':
+      $output = '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('School System provides a complete API for managing students, courses, attendance, and grades.') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_mail().
+ */
+function school_system_mail($key, &$message, $params) {
+  switch ($key) {
+    case 'absence_notification':
+      $message['subject'] = $params['subject'];
+      $message['body'][] = $params['body'];
+      $message['headers']['Content-Type'] = 'text/plain; charset=UTF-8';
+      break;
+  }
+}
+
+/**
+ * Implements hook_page_attachments().
+ */
+function school_system_page_attachments(array &$attachments) {
+  // Agregar headers CORS
+  $attachments['#attached']['http_header'][] = ['Access-Control-Allow-Origin', '*'];
+  $attachments['#attached']['http_header'][] = ['Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS'];
+  $attachments['#attached']['http_header'][] = ['Access-Control-Allow-Headers', 'Content-Type, Authorization'];
+}

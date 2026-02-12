@@ -11,6 +11,7 @@ import StudentDashboard from './components/parent/StudentDashboard';
 import StudentProfile from './components/student/StudentProfile'; // ← NUEVO
 import AdminPanel from './components/admin/AdminPanel';
 
+
 const PrivateRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
 

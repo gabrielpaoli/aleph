@@ -8,7 +8,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://escuela1.ddev.site',
+        target: 'https://aleph.ddev.site/',
         changeOrigin: true,
         secure: false
       }

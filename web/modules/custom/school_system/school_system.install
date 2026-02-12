@@ -1,0 +1,244 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the School System module.
+ */
+
+use Drupal\node\Entity\NodeType;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\Core\Field\BaseFieldDefinition;
+
+/**
+ * Implements hook_install().
+ */
+function school_system_install() {
+  // Crear Content Types
+  _school_system_create_content_types();
+
+  // Crear campos
+  _school_system_create_fields();
+
+  // Crear roles
+  _school_system_create_roles();
+
+  \Drupal::messenger()->addStatus(t('School System module installed successfully.'));
+}
+
+/**
+ * Crear Content Types.
+ */
+function _school_system_create_content_types() {
+  $types = [
+    'school' => [
+      'name' => 'School',
+      'description' => 'Escuela',
+    ],
+    'course' => [
+      'name' => 'Course',
+      'description' => 'Curso',
+    ],
+    'subject' => [
+      'name' => 'Subject',
+      'description' => 'Materia',
+    ],
+    'student' => [
+      'name' => 'Student',
+      'description' => 'Estudiante',
+    ],
+    'teacher' => [
+      'name' => 'Teacher',
+      'description' => 'Docente',
+    ],
+    'attendance' => [
+      'name' => 'Attendance',
+      'description' => 'Asistencia',
+    ],
+    'grade' => [
+      'name' => 'Grade',
+      'description' => 'Calificación',
+    ],
+  ];
+
+  foreach ($types as $type_id => $type_info) {
+    if (!NodeType::load($type_id)) {
+      $node_type = NodeType::create([
+        'type' => $type_id,
+        'name' => $type_info['name'],
+        'description' => $type_info['description'],
+      ]);
+      $node_type->save();
+    }
+  }
+}
+
+/**
+ * Crear campos para los Content Types.
+ */
+function _school_system_create_fields() {
+
+  // ========== SCHOOL FIELDS ==========
+  _school_system_create_field('node', 'school', 'field_school_name', 'string', 'School Name', FALSE);
+
+  // ========== COURSE FIELDS ==========
+  _school_system_create_field('node', 'course', 'field_course_name', 'string', 'Course Name', FALSE);
+  _school_system_create_field('node', 'course', 'field_shift', 'list_string', 'Shift', FALSE, [
+    'allowed_values' => [
+      'Mañana' => 'Mañana',
+      'Tarde' => 'Tarde',
+      'Noche' => 'Noche',
+    ],
+  ]);
+  _school_system_create_field('node', 'course', 'field_school_ref', 'entity_reference', 'School', FALSE, [
+    'target_type' => 'node',
+    'handler_settings' => ['target_bundles' => ['school' => 'school']],
+  ]);
+
+  // ========== SUBJECT FIELDS ==========
+  _school_system_create_field('node', 'subject', 'field_subject_name', 'string', 'Subject Name', FALSE);
+  _school_system_create_field('node', 'subject', 'field_course_ref', 'entity_reference', 'Course', FALSE, [
+    'target_type' => 'node',
+    'handler_settings' => ['target_bundles' => ['course' => 'course']],
+  ]);
+
+  // ========== STUDENT FIELDS ==========
+  _school_system_create_field('node', 'student', 'field_first_name', 'string', 'First Name', FALSE);
+  _school_system_create_field('node', 'student', 'field_last_name', 'string', 'Last Name', FALSE);
+  _school_system_create_field('node', 'student', 'field_parent_email', 'email', 'Parent Email', FALSE);
+  _school_system_create_field('node', 'student', 'field_course_ref', 'entity_reference', 'Course', FALSE, [
+    'target_type' => 'node',
+    'handler_settings' => ['target_bundles' => ['course' => 'course']],
+  ]);
+  _school_system_create_field('node', 'student', 'field_legajo', 'integer', 'Legajo', FALSE);
+
+  // ========== TEACHER FIELDS ==========
+  _school_system_create_field('node', 'teacher', 'field_first_name', 'string', 'First Name', FALSE);
+  _school_system_create_field('node', 'teacher', 'field_last_name', 'string', 'Last Name', FALSE);
+  _school_system_create_field('node', 'teacher', 'field_email', 'email', 'Email', FALSE);
+  _school_system_create_field('node', 'teacher', 'field_subjects_ref', 'entity_reference', 'Subjects', TRUE, [
+    'target_type' => 'node',
+    'handler_settings' => ['target_bundles' => ['subject' => 'subject']],
+  ]);
+
+  // ========== ATTENDANCE FIELDS ==========
+  _school_system_create_field('node', 'attendance', 'field_student_ref', 'entity_reference', 'Student', FALSE, [
+    'target_type' => 'node',
+    'handler_settings' => ['target_bundles' => ['student' => 'student']],
+  ]);
+  _school_system_create_field('node', 'attendance', 'field_date', 'datetime', 'Date', FALSE, [
+    'datetime_type' => 'date',
+  ]);
+  _school_system_create_field('node', 'attendance', 'field_status', 'list_string', 'Status', FALSE, [
+    'allowed_values' => [
+      'present' => 'Present',
+      'absent' => 'Absent',
+      'half_absent' => 'Half Absent',
+    ],
+  ]);
+
+  // ========== GRADE FIELDS ==========
+  _school_system_create_field('node', 'grade', 'field_student_ref', 'entity_reference', 'Student', FALSE, [
+    'target_type' => 'node',
+    'handler_settings' => ['target_bundles' => ['student' => 'student']],
+  ]);
+  _school_system_create_field('node', 'grade', 'field_subject_ref', 'entity_reference', 'Subject', FALSE, [
+    'target_type' => 'node',
+    'handler_settings' => ['target_bundles' => ['subject' => 'subject']],
+  ]);
+  _school_system_create_field('node', 'grade', 'field_grade_value', 'decimal', 'Grade', FALSE, [
+    'precision' => 4,
+    'scale' => 2,
+  ]);
+  _school_system_create_field('node', 'grade', 'field_date', 'datetime', 'Date', FALSE, [
+    'datetime_type' => 'date',
+  ]);
+}
+
+/**
+ * Helper para crear campos.
+ */
+function _school_system_create_field($entity_type, $bundle, $field_name, $field_type, $label, $multiple = FALSE, $settings = []) {
+  // Crear Field Storage si no existe
+  if (!FieldStorageConfig::loadByName($entity_type, $field_name)) {
+    $storage_config = [
+      'field_name' => $field_name,
+      'entity_type' => $entity_type,
+      'type' => $field_type,
+      'cardinality' => $multiple ? -1 : 1,
+    ];
+
+    if (isset($settings['allowed_values'])) {
+      $storage_config['settings']['allowed_values'] = $settings['allowed_values'];
+    }
+
+    if (isset($settings['target_type'])) {
+      $storage_config['settings']['target_type'] = $settings['target_type'];
+    }
+
+    if (isset($settings['datetime_type'])) {
+      $storage_config['settings']['datetime_type'] = $settings['datetime_type'];
+    }
+
+    if (isset($settings['precision'])) {
+      $storage_config['settings']['precision'] = $settings['precision'];
+      $storage_config['settings']['scale'] = $settings['scale'];
+    }
+
+    FieldStorageConfig::create($storage_config)->save();
+  }
+
+  // Crear Field Instance si no existe
+  if (!FieldConfig::loadByName($entity_type, $bundle, $field_name)) {
+    $field_config = [
+      'field_name' => $field_name,
+      'entity_type' => $entity_type,
+      'bundle' => $bundle,
+      'label' => $label,
+      'required' => FALSE,
+    ];
+
+    if (isset($settings['handler_settings'])) {
+      $field_config['settings']['handler_settings'] = $settings['handler_settings'];
+    }
+
+    FieldConfig::create($field_config)->save();
+  }
+}
+
+/**
+ * Crear roles personalizados.
+ */
+function _school_system_create_roles() {
+  $roles = [
+    'preceptor' => 'Preceptor',
+    'parent' => 'Parent',
+  ];
+
+  foreach ($roles as $role_id => $role_name) {
+    if (!\Drupal\user\Entity\Role::load($role_id)) {
+      $role = \Drupal\user\Entity\Role::create([
+        'id' => $role_id,
+        'label' => $role_name,
+      ]);
+      $role->save();
+    }
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function school_system_uninstall() {
+  // Eliminar content types y campos
+  $types = ['school', 'course', 'subject', 'student', 'teacher', 'attendance', 'grade'];
+
+  foreach ($types as $type) {
+    $node_type = NodeType::load($type);
+    if ($node_type) {
+      $node_type->delete();
+    }
+  }
+
+  \Drupal::messenger()->addStatus(t('School System module uninstalled successfully.'));
+}

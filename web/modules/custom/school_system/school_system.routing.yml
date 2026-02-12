@@ -1,0 +1,208 @@
+# API REST Endpoints
+
+# Students
+school_system.api.students:
+  path: '/api/students'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\StudentApiController::getAll'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+school_system.api.student:
+  path: '/api/students/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\StudentApiController::getOne'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+school_system.api.student.create:
+  path: '/api/students'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\StudentApiController::createStudent'
+  methods: [POST]
+  requirements:
+    _permission: 'create student content'
+
+school_system.api.student.update:
+  path: '/api/students/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\StudentApiController::update'
+  methods: [PATCH]
+  requirements:
+    _permission: 'edit any student content'
+
+school_system.api.student.delete:
+  path: '/api/students/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\StudentApiController::delete'
+  methods: [DELETE]
+  requirements:
+    _permission: 'delete any student content'
+
+# Courses
+school_system.api.courses:
+  path: '/api/courses'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\CourseApiController::getAll'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+school_system.api.course.create:
+  path: '/api/courses'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\CourseApiController::createCourse'
+  methods: [POST]
+  requirements:
+    _permission: 'create course content'
+
+school_system.api.course.update:
+  path: '/api/courses/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\CourseApiController::update'
+  methods: [PATCH]
+  requirements:
+    _permission: 'edit any course content'
+
+school_system.api.course.delete:
+  path: '/api/courses/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\CourseApiController::delete'
+  methods: [DELETE]
+  requirements:
+    _permission: 'delete any course content'
+
+# Subjects
+school_system.api.subjects:
+  path: '/api/subjects'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\SubjectApiController::getAll'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+school_system.api.subject.create:
+  path: '/api/subjects'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\SubjectApiController::createSubject'
+  methods: [POST]
+  requirements:
+    _permission: 'create subject content'
+
+school_system.api.subject.update:
+  path: '/api/subjects/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\SubjectApiController::update'
+  methods: [PATCH]
+  requirements:
+    _permission: 'edit any subject content'
+
+school_system.api.subject.delete:
+  path: '/api/subjects/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\SubjectApiController::delete'
+  methods: [DELETE]
+  requirements:
+    _permission: 'delete any subject content'
+
+# Attendance
+school_system.api.attendance:
+  path: '/api/attendance'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\AttendanceApiController::getAll'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+school_system.api.attendance.create:
+  path: '/api/attendance'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\AttendanceApiController::createAttendance'
+  methods: [POST]
+  requirements:
+    _permission: 'create attendance content'
+
+school_system.api.attendance.update:
+  path: '/api/attendance/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\AttendanceApiController::update'
+  methods: [PATCH]
+  requirements:
+    _permission: 'edit any attendance content'
+
+school_system.api.attendance.bulk:
+  path: '/api/attendance/bulk'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\AttendanceApiController::bulkUpdate'
+  methods: [POST]
+  requirements:
+    _permission: 'edit any attendance content'
+
+# Grades
+school_system.api.grades:
+  path: '/api/grades'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\GradeApiController::getAll'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+school_system.api.grade.create:
+  path: '/api/grades'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\GradeApiController::createGrade'
+  methods: [POST]
+  requirements:
+    _permission: 'create grade content'
+
+school_system.api.grade.update:
+  path: '/api/grades/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\GradeApiController::update'
+  methods: [PATCH]
+  requirements:
+    _permission: 'edit any grade content'
+
+school_system.api.grade.delete:
+  path: '/api/grades/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\GradeApiController::delete'
+  methods: [DELETE]
+  requirements:
+    _permission: 'delete any grade content'
+
+# Notifications
+school_system.api.notifications.absence:
+  path: '/api/notifications/absence'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\NotificationApiController::sendAbsenceEmails'
+  methods: [POST]
+  requirements:
+    _permission: 'send notifications'
+
+# Authentication
+school_system.api.auth.login:
+  path: '/api/auth/login'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\AuthApiController::login'
+  methods: [POST]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.auth.logout:
+  path: '/api/auth/logout'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\AuthApiController::logout'
+  methods: [POST]
+  requirements:
+    _user_is_logged_in: 'TRUE'
+
+school_system.api.auth.me:
+  path: '/api/auth/me'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\AuthApiController::getCurrentUser'
+  methods: [GET]
+  requirements:
+    _user_is_logged_in: 'TRUE'
