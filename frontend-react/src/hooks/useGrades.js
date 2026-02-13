@@ -22,35 +22,12 @@ export const useGrades = (studentId = null) => {
       
       if (studentId) {
         console.log(`📥 Cargando calificaciones de Drupal para estudiante ${studentId}`);
-        // Forzar a traer de Drupal, no de dummy data
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/grades?studentId=${studentId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        data = await response.json();
+        // Usar el servicio de API directamente
+        data = await gradeService.getByStudent(studentId);
       } else {
         console.log('📥 Cargando todas las calificaciones de Drupal');
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/grades`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        data = await response.json();
+        // Usar el servicio de API directamente
+        data = await gradeService.getAll();
       }
 
       console.log('✅ Calificaciones cargadas de Drupal:', data);

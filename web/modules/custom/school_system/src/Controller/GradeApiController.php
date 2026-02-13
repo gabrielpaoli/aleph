@@ -62,6 +62,7 @@ class GradeApiController extends ControllerBase {
         'field_subject_ref' => isset($data['subjectId']) ? ['target_id' => $data['subjectId']] : NULL,
         'field_grade_value' => $data['grade'] ?? 0,
         'field_date' => $data['date'] ?? date('Y-m-d'),
+        'status' => 1,
       ]);
       $node->save();
 

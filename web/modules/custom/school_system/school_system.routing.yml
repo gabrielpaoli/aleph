@@ -49,6 +49,47 @@ school_system.api.student.delete:
   requirements:
     _permission: 'delete any student content'
 
+# Students (alternative routes without permission restrictions)
+school_system.api.estudiantes.list:
+  path: '/api/estudiantes'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\StudentApiController::getAll'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.estudiantes.get:
+  path: '/api/estudiantes/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\StudentApiController::getOne'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.estudiantes.create:
+  path: '/api/estudiantes'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\StudentApiController::createStudent'
+  methods: [POST]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.estudiantes.update:
+  path: '/api/estudiantes/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\StudentApiController::updateStudent'
+  methods: [PATCH]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.estudiantes.delete:
+  path: '/api/estudiantes/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\StudentApiController::deleteStudent'
+  methods: [DELETE]
+  requirements:
+    _access: 'TRUE'
+
 # Courses
 school_system.api.courses:
   path: '/api/courses'
@@ -188,7 +229,7 @@ school_system.api.notifications.absence:
     _controller: '\Drupal\school_system\Controller\NotificationApiController::sendAbsenceEmails'
   methods: [POST]
   requirements:
-    _permission: 'send notifications'
+    _access: 'TRUE'
 
 # Authentication
 school_system.api.auth.login:

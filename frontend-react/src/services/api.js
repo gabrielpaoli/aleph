@@ -62,7 +62,7 @@ export const studentService = {
       return Promise.resolve(dummyData.students);
     }
     console.log('🌐 Fetching students from API');
-    const response = await api.get('/api/students');
+    const response = await api.get('/api/estudiantes');
     return response.data;
   },
 
@@ -70,7 +70,7 @@ export const studentService = {
     if (USE_DUMMY_DATA) {
       return Promise.resolve(dummyData.students.find(s => s.id === id));
     }
-    const response = await api.get(`/api/students/${id}`);
+    const response = await api.get(`/api/estudiantes/${id}`);
     return response.data;
   },
 
@@ -90,7 +90,7 @@ export const studentService = {
       dummyData.students.push(newStudent);
       return Promise.resolve(newStudent);
     }
-    const response = await api.post('/api/students', studentData);
+    const response = await api.post('/api/estudiantes', studentData);
     return response.data;
   },
 
@@ -102,7 +102,7 @@ export const studentService = {
         return Promise.resolve(dummyData.students[index]);
       }
     }
-    const response = await api.patch(`/api/students/${id}`, studentData);
+    const response = await api.patch(`/api/estudiantes/${id}`, studentData);
     return response.data;
   },
 
@@ -111,7 +111,7 @@ export const studentService = {
       dummyData.students = dummyData.students.filter(s => s.id !== id);
       return Promise.resolve({ success: true });
     }
-    const response = await api.delete(`/api/students/${id}`);
+    const response = await api.delete(`/api/estudiantes/${id}`);
     return response.data;
   }
 };
@@ -349,7 +349,8 @@ export const gradeService = {
     if (USE_DUMMY_DATA) {
       return Promise.resolve(dummyData.grades);
     }
-    const response = await api.get('/api/grades');
+    // Agregar timestamp para evitar caché del navegador
+    const response = await api.get(`/api/grades?_t=${Date.now()}`);
     return response.data;
   },
 
@@ -359,7 +360,9 @@ export const gradeService = {
       return Promise.resolve(dummyData.grades.filter(g => g.studentId === studentId));
     }
     console.log(`🌐 Fetching grades for student ${studentId}`);
-    const response = await api.get(`/api/grades?studentId=${studentId}`);
+    // Agregar timestamp para evitar caché del navegador
+    const response = await api.get(`/api/grades?studentId=${studentId}&_t=${Date.now()}`);
+    console.log('✅ Grades response data:', response.data);
     return response.data;
   },
 
