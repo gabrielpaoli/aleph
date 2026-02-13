@@ -36,13 +36,38 @@ const Navbar = () => {
                 </Link>
               </div>
             )}
+
+            {user?.role === 'directivo' && (
+              <div className="flex gap-1">
+                <Link
+                  to="/admin"
+                  className="px-4 py-2 rounded-lg hover:bg-white/20 transition-colors font-medium"
+                >
+                  ⚙️ Administración
+                </Link>
+              </div>
+            )}
+
+            {user?.role === 'docente' && (
+              <div className="flex gap-1">
+                <Link
+                  to="/asistencias"
+                  className="px-4 py-2 rounded-lg hover:bg-white/20 transition-colors font-medium"
+                >
+                  📋 Asistencias
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-4">
             <div className="text-right">
               <div className="text-sm font-medium">{user?.email}</div>
               <div className="text-xs text-indigo-200 capitalize">
-                {user?.role === 'preceptor' ? '👨‍🏫 Preceptor' : '👨‍👩‍👦 Padre'}
+                {user?.role === 'preceptor' ? '👨‍🏫 Preceptor' : 
+                 user?.role === 'directivo' ? '👔 Directivo' :
+                 user?.role === 'docente' ? '📚 Docente' :
+                 '👨‍👩‍👦 Padre'}
               </div>
             </div>
             <button

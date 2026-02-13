@@ -19,7 +19,7 @@ class AttendanceApiController extends ControllerBase {
     $query = \Drupal::entityQuery('node')
       ->condition('type', 'attendance')
       ->condition('status', 1)
-      ->accessCheck(TRUE);
+      ->accessCheck(FALSE);
 
     // Filtros
     $student_id = $request->query->get('studentId');
@@ -41,7 +41,7 @@ class AttendanceApiController extends ControllerBase {
       $student_query = \Drupal::entityQuery('node')
         ->condition('type', 'student')
         ->condition('field_course_ref', $course_id)
-        ->accessCheck(TRUE);
+        ->accessCheck(FALSE);
       $student_ids = $student_query->execute();
 
       if (!empty($student_ids)) {
@@ -153,7 +153,7 @@ class AttendanceApiController extends ControllerBase {
           ->condition('type', 'attendance')
           ->condition('field_student_ref', $attendance_data['studentId'])
           ->condition('field_date', $attendance_data['date'])
-          ->accessCheck(TRUE);
+          ->accessCheck(FALSE);
 
         $nids = $query->execute();
 

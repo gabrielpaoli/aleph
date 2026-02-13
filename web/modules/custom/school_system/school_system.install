@@ -213,6 +213,8 @@ function _school_system_create_roles() {
   $roles = [
     'preceptor' => 'Preceptor',
     'parent' => 'Parent',
+    'directivo' => 'Directivo',
+    'docente' => 'Docente',
   ];
 
   foreach ($roles as $role_id => $role_name) {
@@ -241,4 +243,100 @@ function school_system_uninstall() {
   }
 
   \Drupal::messenger()->addStatus(t('School System module uninstalled successfully.'));
+}
+
+/**
+ * Update hook: Assign permissions to new roles (directivo, docente).
+ */
+function school_system_update_1002() {
+  _school_system_assign_role_permissions();
+  return 'Permissions have been assigned to directivo and docente roles.';
+}
+
+/**
+ * Helper: Assign permissions to roles.
+ */
+function _school_system_assign_role_permissions() {
+  $docente_permissions = [
+    'access content',
+    'access content overview',
+    'bypass node access',
+    'create grade content',
+    'edit any grade content',
+    'view any grade content',
+    'create attendance content',
+    'edit any attendance content',
+  ];
+
+  $directivo_permissions = [
+    'access content',
+    'access content overview',
+    'access administration pages',
+    'bypass node access',
+    'administer users',
+    'create preceptor users',
+    'create docente users',
+    'manage school users',
+  ];
+
+  // Assign permissions to docente role
+  $docente_role = \Drupal\user\Entity\Role::load('docente');
+  if ($docente_role) {
+    foreach ($docente_permissions as $permission) {
+      if (\Drupal::service('user.permissions')->moduleExists()) {
+        $docente_role->grantPermission($permission);
+      }
+    }
+    $docente_role->save();
+  }
+
+  // Assign permissions to directivo role
+  $directivo_role = \Drupal\user\Entity\Role::load('directivo');
+  if ($directivo_role) {
+    foreach ($directivo_permissions as $permission) {
+      if (\Drupal::service('user.permissions')->moduleExists()) {
+        $directivo_role->grantPermission($permission);
+      }
+    }
+    $directivo_role->save();
+  }
+}
+
+/**
+ * Update hook: Add subjects field to users for docente role.
+ */
+function school_system_update_1003() {
+  // Crear campo de materias para usuarios
+  $field_storage = \Drupal\field\Entity\FieldStorageConfig::loadByName('user', 'field_subjects_ref');
+  if (!$field_storage) {
+    $field_storage = \Drupal\field\Entity\FieldStorageConfig::create([
+      'field_name' => 'field_subjects_ref',
+      'entity_type' => 'user',
+      'type' => 'entity_reference',
+      'cardinality' => -1,
+      'settings' => [
+        'target_type' => 'node',
+      ],
+    ]);
+    $field_storage->save();
+  }
+
+  $field = \Drupal\field\Entity\FieldConfig::loadByName('user', 'user', 'field_subjects_ref');
+  if (!$field) {
+    $field = \Drupal\field\Entity\FieldConfig::create([
+      'field_storage' => $field_storage,
+      'bundle' => 'user',
+      'label' => 'Subjects',
+      'required' => FALSE,
+      'settings' => [
+        'handler' => 'default:node',
+        'handler_settings' => [
+          'target_bundles' => ['subject' => 'subject'],
+        ],
+      ],
+    ]);
+    $field->save();
+  }
+
+  return 'Campo de materias agregado a usuarios.';
 }

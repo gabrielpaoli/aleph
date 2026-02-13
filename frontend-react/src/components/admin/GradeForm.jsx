@@ -229,7 +229,8 @@ const GradeForm = () => {
 
   const getSubjectName = (subjectId) => {
     const subject = subjects.find(s => s.id === subjectId);
-    return subject ? subject.name : 'N/A';
+    if (!subject) return 'N/A';
+    return subject.courseName ? `${subject.name} (${subject.courseName})` : subject.name;
   };
 
   const getGradeColor = (grade) => {
@@ -367,7 +368,7 @@ const GradeForm = () => {
               <option value="">Seleccionar materia</option>
               {subjects.map(subject => (
                 <option key={subject.id} value={subject.id}>
-                  {subject.name}
+                  {subject.courseName ? `${subject.name} (${subject.courseName})` : subject.name}
                 </option>
               ))}
             </select>
@@ -454,7 +455,7 @@ const GradeForm = () => {
             <option value="">Todas las materias</option>
             {subjects.map(subject => (
               <option key={subject.id} value={subject.id}>
-                {subject.name}
+                {subject.courseName ? `${subject.name} (${subject.courseName})` : subject.name}
               </option>
             ))}
           </select>

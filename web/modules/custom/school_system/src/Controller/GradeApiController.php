@@ -19,7 +19,7 @@ class GradeApiController extends ControllerBase {
     $query = \Drupal::entityQuery('node')
       ->condition('type', 'grade')
       ->condition('status', 1)
-      ->accessCheck(TRUE);
+      ->accessCheck(FALSE);
 
     $student_id = $request->query->get('studentId');
     if ($student_id) {

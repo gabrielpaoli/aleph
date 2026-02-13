@@ -214,3 +214,125 @@ school_system.api.auth.me:
   methods: [GET]
   requirements:
     _user_is_logged_in: 'TRUE'
+
+school_system.api.debug.session:
+  path: '/api/debug/session'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\DebugApiController::checkSession'
+  methods: [GET]
+  requirements:
+    _user_is_logged_in: 'TRUE'
+
+# Users API Routes
+school_system.api.users.test:
+  path: '/api/users/test'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\UserApiController::testEndpoint'
+  methods: [GET]
+  requirements:
+    _permission: 'manage school users'
+
+school_system.api.users.by_role:
+  path: '/api/users/role/{role}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\UserApiController::getUsersByRole'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.users.update_role:
+  path: '/api/users/{user_id}/role'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\UserApiController::updateUserRole'
+  methods: [PATCH]
+  requirements:
+    _permission: 'manage school users'
+
+school_system.api.users.update:
+  path: '/api/users/{user_id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\UserApiController::updateUser'
+  methods: [PATCH]
+  requirements:
+    _permission: 'manage school users'
+
+school_system.api.users.delete:
+  path: '/api/users/{user_id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\UserApiController::deleteUser'
+  methods: [DELETE]
+  requirements:
+    _permission: 'manage school users'
+
+school_system.api.users.create:
+  path: '/api/users'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\UserApiController::createUser'
+  methods: [POST]
+  requirements:
+    _permission: 'manage school users'
+# Teachers (from Users with 'docente' role)
+school_system.api.teachers.list:
+  path: '/api/docentes'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\UserApiController::getTeachers'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.teachers.create:
+  path: '/api/docentes'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\UserApiController::createTeacher'
+  methods: [POST]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.teachers.update:
+  path: '/api/docentes/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\UserApiController::updateTeacher'
+  methods: [PATCH]
+  requirements:
+    _access: 'TRUE'
+
+# Teachers (legacy - from Teacher nodes)
+school_system.api.teachers:
+  path: '/api/teachers'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\TeacherApiController::getAll'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+school_system.api.teacher:
+  path: '/api/teachers/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\TeacherApiController::getOne'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+school_system.api.teacher.create:
+  path: '/api/teachers'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\TeacherApiController::createTeacher'
+  methods: [POST]
+  requirements:
+    _permission: 'bypass node access'
+
+school_system.api.teacher.update:
+  path: '/api/teachers/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\TeacherApiController::update'
+  methods: [PATCH]
+  requirements:
+    _permission: 'bypass node access'
+
+school_system.api.teacher.delete:
+  path: '/api/teachers/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\TeacherApiController::delete'
+  methods: [DELETE]
+  requirements:
+    _permission: 'bypass node access'

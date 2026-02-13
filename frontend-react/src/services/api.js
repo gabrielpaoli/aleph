@@ -516,4 +516,235 @@ export const notificationService = {
   }
 };
 
+// ============ USUARIOS ============
+export const userService = {
+  create: async (userData) => {
+    if (USE_DUMMY_DATA) {
+      const newUser = { ...userData, id: Date.now() };
+      dummyData.users.push(newUser);
+      return Promise.resolve(newUser);
+    }
+    console.log('🌐 Creating user in API');
+    try {
+      const response = await api.post('/api/users', userData);
+      console.log('✅ User created:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error creating user:', error);
+      throw error;
+    }
+  },
+
+  update: async (userId, userData) => {
+    if (USE_DUMMY_DATA) {
+      const user = dummyData.users.find(u => u.id === userId);
+      if (user) {
+        Object.assign(user, userData);
+      }
+      return Promise.resolve(user);
+    }
+    console.log('🌐 Updating user:', userId);
+    try {
+      const response = await api.patch(`/api/users/${userId}`, userData);
+      console.log('✅ User updated:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error updating user:', error);
+      throw error;
+    }
+  },
+
+  getTeachers: async () => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for teachers');
+      return Promise.resolve(dummyData.users.filter(u => u.role === 'docente'));
+    }
+    console.log('🌐 Fetching teachers from API');
+    try {
+      const response = await api.get('/api/docentes');
+      console.log('✅ Teachers:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching teachers:', error);
+      throw error;
+    }
+  },
+
+  createTeacher: async (teacherData) => {
+    if (USE_DUMMY_DATA) {
+      const newTeacher = { ...teacherData, id: Date.now(), role: 'docente' };
+      dummyData.users.push(newTeacher);
+      return Promise.resolve({ success: true, ...newTeacher });
+    }
+    console.log('🌐 Creating teacher in API');
+    try {
+      const response = await api.post('/api/docentes', teacherData);
+      console.log('✅ Teacher created:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error creating teacher:', error);
+      throw error;
+    }
+  },
+
+  updateTeacher: async (id, teacherData) => {
+    if (USE_DUMMY_DATA) {
+      const index = dummyData.users.findIndex(u => u.id === id);
+      if (index !== -1) {
+        dummyData.users[index] = { ...dummyData.users[index], ...teacherData };
+        return Promise.resolve({ success: true, ...dummyData.users[index] });
+      }
+      return Promise.reject(new Error('Teacher not found'));
+    }
+    console.log('🌐 Updating teacher:', id);
+    try {
+      const response = await api.patch(`/api/docentes/${id}`, teacherData);
+      console.log('✅ Teacher updated:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error updating teacher:', error);
+      throw error;
+    }
+  },
+
+  getByRole: async (role) => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for users');
+      return Promise.resolve(dummyData.users.filter(u => u.role === role));
+    }
+    console.log('🌐 Fetching users by role:', role);
+    try {
+      const response = await api.get(`/api/users/role/${role}`);
+      console.log('✅ Users:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching users:', error);
+      throw error;
+    }
+  },
+
+  updateRole: async (userId, role) => {
+    if (USE_DUMMY_DATA) {
+      const user = dummyData.users.find(u => u.id === userId);
+      if (user) {
+        user.role = role;
+      }
+      return Promise.resolve(user);
+    }
+    console.log('🌐 Updating user role:', userId, role);
+    try {
+      const response = await api.patch(`/api/users/${userId}/role`, { role });
+      console.log('✅ User role updated:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error updating user:', error);
+      throw error;
+    }
+  },
+
+  delete: async (userId) => {
+    if (USE_DUMMY_DATA) {
+      dummyData.users = dummyData.users.filter(u => u.id !== userId);
+      return Promise.resolve({ success: true });
+    }
+    console.log('🌐 Deleting user');
+    try {
+      const response = await api.delete(`/api/users/${userId}`);
+      console.log('✅ User deleted:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error deleting user:', error);
+      throw error;
+    }
+  }
+};
+
+// ============ TEACHERS ============
+export const teacherService = {
+  getAll: async () => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for teachers');
+      return Promise.resolve(dummyData.teachers || []);
+    }
+    console.log('🌐 Fetching teachers from API');
+    try {
+      const response = await api.get('/api/teachers');
+      console.log('✅ Teachers from API:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching teachers:', error);
+      throw error;
+    }
+  },
+
+  getById: async (id) => {
+    if (USE_DUMMY_DATA) {
+      return Promise.resolve(dummyData.teachers?.find(t => t.id === id) || null);
+    }
+    console.log('🌐 Fetching teacher:', id);
+    try {
+      const response = await api.get(`/api/teachers/${id}`);
+      console.log('✅ Teacher from API:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching teacher:', error);
+      throw error;
+    }
+  },
+
+  create: async (teacherData) => {
+    if (USE_DUMMY_DATA) {
+      const newTeacher = { ...teacherData, id: Date.now() };
+      dummyData.teachers = dummyData.teachers || [];
+      dummyData.teachers.push(newTeacher);
+      return Promise.resolve(newTeacher);
+    }
+    console.log('🌐 Creating teacher in API');
+    try {
+      const response = await api.post('/api/teachers', teacherData);
+      console.log('✅ Teacher created:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error creating teacher:', error);
+      throw error;
+    }
+  },
+
+  update: async (id, teacherData) => {
+    if (USE_DUMMY_DATA) {
+      const index = dummyData.teachers?.findIndex(t => t.id === id) ?? -1;
+      if (index !== -1) {
+        dummyData.teachers[index] = { ...teacherData, id };
+        return Promise.resolve(dummyData.teachers[index]);
+      }
+      return Promise.reject(new Error('Teacher not found'));
+    }
+    console.log('🌐 Updating teacher:', id);
+    try {
+      const response = await api.patch(`/api/teachers/${id}`, teacherData);
+      console.log('✅ Teacher updated:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error updating teacher:', error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    if (USE_DUMMY_DATA) {
+      dummyData.teachers = dummyData.teachers?.filter(t => t.id !== id) || [];
+      return Promise.resolve({ success: true });
+    }
+    console.log('🌐 Deleting teacher:', id);
+    try {
+      const response = await api.delete(`/api/teachers/${id}`);
+      console.log('✅ Teacher deleted:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error deleting teacher:', error);
+      throw error;
+    }
+  }
+};
+
 export default api;

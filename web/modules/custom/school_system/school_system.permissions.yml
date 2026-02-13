@@ -5,3 +5,11 @@ send notifications:
 access school system api:
   title: 'Access School System API'
   description: 'Allow access to School System REST API'
+
+manage school users:
+  title: 'Manage school users'
+  description: 'Allows managing users (create, edit, delete) in the school system'
+
+view school system users:
+  title: 'View school system users'
+  description: 'Allow viewing users in the school system'

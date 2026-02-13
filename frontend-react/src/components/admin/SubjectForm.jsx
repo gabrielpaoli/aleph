@@ -238,7 +238,7 @@ const SubjectForm = () => {
               subjects.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map(subject => (
                 <tr key={subject.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
                   <td className="p-4">{subject.name}</td>
-                  <td className="p-4">{getCourseName(subject.courseId)}</td>
+                  <td className="p-4">{subject.courseName || getCourseName(subject.courseId)}</td>
                   <td className="p-4">
                     <div className="flex gap-2 justify-end">
                       <button

@@ -46,6 +46,22 @@ const AppRoutes = () => {
           </>
         )}
 
+        {user.role === 'directivo' && (
+          <>
+            <Route path="/" element={<Navigate to="/admin" />} />
+            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/estudiante/:studentId" element={<StudentProfile />} />
+          </>
+        )}
+
+        {user.role === 'docente' && (
+          <>
+            <Route path="/" element={<Navigate to="/asistencias" />} />
+            <Route path="/asistencias" element={<AttendanceTable />} />
+            <Route path="/estudiante/:studentId" element={<StudentProfile />} />
+          </>
+        )}
+
         {user.role === 'parent' && (
           <>
             <Route path="/" element={<Navigate to="/estudiante" />} />

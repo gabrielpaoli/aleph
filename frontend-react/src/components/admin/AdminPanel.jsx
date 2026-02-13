@@ -4,8 +4,9 @@ import React, { useState } from 'react';
 import StudentForm from './StudentForm';
 import CourseForm from './CourseForm';
 import SubjectForm from './SubjectForm';
-import TeacherForm from './TeacherForm';
+import TeacherManagement from './TeacherManagement';
 import GradeForm from './GradeForm';
+import UserManagement from './UserManagement';
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('students');
@@ -15,7 +16,8 @@ const AdminPanel = () => {
     { id: 'courses', label: 'Cursos', icon: '📚', component: CourseForm },
     { id: 'subjects', label: 'Materias', icon: '📖', component: SubjectForm },
     { id: 'grades', label: 'Calificaciones', icon: '⭐', component: GradeForm },
-    { id: 'teachers', label: 'Docentes', icon: '👨‍🏫', component: TeacherForm }
+    { id: 'teachers', label: 'Docentes', icon: '👨‍🏫', component: TeacherManagement },
+    { id: 'users', label: 'Usuarios', icon: '👥', component: UserManagement }
   ];
 
   const ActiveComponent = tabs.find(t => t.id === activeTab)?.component;

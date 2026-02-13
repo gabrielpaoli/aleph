@@ -88,21 +88,26 @@ class SchoolSystemCommands extends DrushCommands {
     ];
 
     // Crear docentes
-    $this->output()->writeln('👨‍🏫 Creating teachers...');
-    $this->createTeacher('Roberto', 'Díaz', 'roberto.diaz@escuela1.com', [
-      $subjects_1a['matematicas'],
-      $subjects_1b['matematicas_1b'],
-    ]);
-    $this->createTeacher('Laura', 'Morales', 'laura.morales@escuela1.com', [
-      $subjects_1a['lengua'],
-      $subjects_1b['lengua_1b'],
-    ]);
+    $this->output()->writeln('👨‍🏫 Creating teachers (as users with docente role)...');
 
     // Crear usuarios
     $this->output()->writeln('👤 Creating users...');
+    $this->createUser('admin@escuela1.com', 'admin123', 'administrator');
     $this->createUser('preceptor@escuela1.com', 'preceptor', 'preceptor');
     $this->createUser('preceptor@escuela2.com', 'preceptor', 'preceptor');
-    $this->createUser('admin@escuela1.com', 'admin', 'administrator');
+    
+    // Crear directivo
+    $this->createUser('directivo@escuela1.com', 'directivo123', 'directivo');
+    
+    // Crear docentes con materias asignadas
+    $this->createUser('roberto.diaz@escuela1.com', 'docente123', 'docente', [
+      $subjects_1a['matematicas'],
+      $subjects_1b['matematicas_1b'],
+    ]);
+    $this->createUser('laura.morales@escuela1.com', 'docente123', 'docente', [
+      $subjects_1a['lengua'],
+      $subjects_1b['lengua_1b'],
+    ]);
 
     foreach ($students as $student) {
       $email = $student->get('field_parent_email')->value;
@@ -279,7 +284,7 @@ class SchoolSystemCommands extends DrushCommands {
     $node->save();
   }
 
-  private function createUser($email, $password, $role) {
+  private function createUser($email, $password, $role, $subject_ids = []) {
     $existing = \Drupal::entityTypeManager()
       ->getStorage('user')
       ->loadByProperties(['mail' => $email]);
@@ -295,6 +300,16 @@ class SchoolSystemCommands extends DrushCommands {
       'status' => 1,
       'roles' => [$role],
     ]);
+
+    // Asignar materias si el rol es docente y hay materias
+    if ($role === 'docente' && !empty($subject_ids)) {
+      $subjects_refs = [];
+      foreach ($subject_ids as $subject_id) {
+        $subjects_refs[] = ['target_id' => $subject_id];
+      }
+      $user->set('field_subjects_ref', $subjects_refs);
+    }
+
     $user->save();
   }
 

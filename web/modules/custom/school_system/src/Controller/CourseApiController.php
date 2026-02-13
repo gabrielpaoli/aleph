@@ -19,7 +19,7 @@ class CourseApiController extends ControllerBase {
     $query = \Drupal::entityQuery('node')
       ->condition('type', 'course')
       ->condition('status', 1)
-      ->accessCheck(TRUE);
+      ->accessCheck(FALSE);
 
     $school_id = $request->query->get('schoolId');
     if ($school_id) {
@@ -129,10 +129,17 @@ class CourseApiController extends ControllerBase {
    */
   private function formatCourse($node) {
     $school_ref = $node->get('field_school_ref')->target_id;
+    $name = $node->get('field_course_name')->value ?? '';
+    $title = $node->getTitle();
+    
+    // Use title as fallback if name is empty
+    if (empty($name) && !empty($title)) {
+      $name = $title;
+    }
 
     return [
       'id' => (int) $node->id(),
-      'name' => $node->get('field_course_name')->value ?? '',
+      'name' => $name,
       'shift' => $node->get('field_shift')->value ?? '',
       'schoolId' => $school_ref ? (int) $school_ref : NULL,
     ];

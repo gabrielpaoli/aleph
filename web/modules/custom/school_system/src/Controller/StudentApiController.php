@@ -206,11 +206,23 @@ class StudentApiController extends ControllerBase {
    */
   private function formatStudent($node) {
     $course_ref = $node->get('field_course_ref')->target_id ?? NULL;
+    
+    // Get individual fields or fallback to title
+    $firstName = $node->get('field_first_name')->value ?? '';
+    $lastName = $node->get('field_last_name')->value ?? '';
+    $title = $node->getTitle();
+    
+    // If fields are empty, try to extract from title
+    if (empty($firstName) && empty($lastName) && !empty($title)) {
+      $parts = explode(' ', trim($title), 2);
+      $firstName = $parts[0] ?? '';
+      $lastName = $parts[1] ?? '';
+    }
 
     return [
       'id' => (int) $node->id(),
-      'firstName' => $node->get('field_first_name')->value ?? '',
-      'lastName' => $node->get('field_last_name')->value ?? '',
+      'firstName' => $firstName,
+      'lastName' => $lastName,
       'email' => $node->get('field_parent_email')->value ?? '',
       'courseId' => $course_ref ? (int) $course_ref : NULL,
       'legajo' => (int) ($node->get('field_legajo')->value ?? 0),

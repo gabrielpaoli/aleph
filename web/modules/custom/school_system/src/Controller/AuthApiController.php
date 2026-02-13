@@ -63,14 +63,20 @@ class AuthApiController extends ControllerBase {
 
     // Determinar rol
     $role = 'user';
-    if ($user->hasRole('preceptor')) {
+    if ($user->hasRole('administrator')) {
+      $role = 'admin';
+    }
+    elseif ($user->hasRole('directivo')) {
+      $role = 'directivo';
+    }
+    elseif ($user->hasRole('preceptor')) {
       $role = 'preceptor';
+    }
+    elseif ($user->hasRole('docente')) {
+      $role = 'docente';
     }
     elseif ($user->hasRole('parent')) {
       $role = 'parent';
-    }
-    elseif ($user->hasRole('administrator')) {
-      $role = 'admin';
     }
 
     // Buscar estudiante(s) asociado(s) si es padre
@@ -130,14 +136,20 @@ class AuthApiController extends ControllerBase {
     }
 
     $role = 'user';
-    if ($user->hasRole('preceptor')) {
+    if ($user->hasRole('administrator')) {
+      $role = 'admin';
+    }
+    elseif ($user->hasRole('directivo')) {
+      $role = 'directivo';
+    }
+    elseif ($user->hasRole('preceptor')) {
       $role = 'preceptor';
+    }
+    elseif ($user->hasRole('docente')) {
+      $role = 'docente';
     }
     elseif ($user->hasRole('parent')) {
       $role = 'parent';
-    }
-    elseif ($user->hasRole('administrator')) {
-      $role = 'admin';
     }
 
     $student_id = NULL;

@@ -19,7 +19,7 @@ class SubjectApiController extends ControllerBase {
     $query = \Drupal::entityQuery('node')
       ->condition('type', 'subject')
       ->condition('status', 1)
-      ->accessCheck(TRUE);
+      ->accessCheck(FALSE);
 
     $course_id = $request->query->get('courseId');
     if ($course_id) {
@@ -123,11 +123,28 @@ class SubjectApiController extends ControllerBase {
    */
   private function formatSubject($node) {
     $course_ref = $node->get('field_course_ref')->target_id;
+    $name = $node->get('field_subject_name')->value ?? '';
+    $title = $node->getTitle();
+    
+    // Use title as fallback if name is empty
+    if (empty($name) && !empty($title)) {
+      $name = $title;
+    }
+
+    // Get course name if course exists
+    $courseName = null;
+    if ($course_ref) {
+      $course_node = Node::load($course_ref);
+      if ($course_node) {
+        $courseName = $course_node->get('field_course_name')->value ?? $course_node->getTitle();
+      }
+    }
 
     return [
       'id' => (int) $node->id(),
-      'name' => $node->get('field_subject_name')->value ?? '',
+      'name' => $name,
       'courseId' => $course_ref ? (int) $course_ref : NULL,
+      'courseName' => $courseName,
     ];
   }
 
