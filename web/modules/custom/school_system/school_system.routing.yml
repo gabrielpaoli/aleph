@@ -97,7 +97,7 @@ school_system.api.courses:
     _controller: '\Drupal\school_system\Controller\CourseApiController::getAll'
   methods: [GET]
   requirements:
-    _permission: 'access content'
+    _access: 'TRUE'
 
 school_system.api.course.create:
   path: '/api/courses'
@@ -105,7 +105,7 @@ school_system.api.course.create:
     _controller: '\Drupal\school_system\Controller\CourseApiController::createCourse'
   methods: [POST]
   requirements:
-    _permission: 'create course content'
+    _access: 'TRUE'
 
 school_system.api.course.update:
   path: '/api/courses/{id}'
@@ -113,7 +113,7 @@ school_system.api.course.update:
     _controller: '\Drupal\school_system\Controller\CourseApiController::update'
   methods: [PATCH]
   requirements:
-    _permission: 'edit any course content'
+    _access: 'TRUE'
 
 school_system.api.course.delete:
   path: '/api/courses/{id}'
@@ -121,7 +121,7 @@ school_system.api.course.delete:
     _controller: '\Drupal\school_system\Controller\CourseApiController::delete'
   methods: [DELETE]
   requirements:
-    _permission: 'delete any course content'
+    _access: 'TRUE'
 
 # Subjects
 school_system.api.subjects:
@@ -130,7 +130,7 @@ school_system.api.subjects:
     _controller: '\Drupal\school_system\Controller\SubjectApiController::getAll'
   methods: [GET]
   requirements:
-    _permission: 'access content'
+    _access: 'TRUE'
 
 school_system.api.subject.create:
   path: '/api/subjects'
@@ -138,7 +138,7 @@ school_system.api.subject.create:
     _controller: '\Drupal\school_system\Controller\SubjectApiController::createSubject'
   methods: [POST]
   requirements:
-    _permission: 'create subject content'
+    _access: 'TRUE'
 
 school_system.api.subject.update:
   path: '/api/subjects/{id}'
@@ -146,7 +146,7 @@ school_system.api.subject.update:
     _controller: '\Drupal\school_system\Controller\SubjectApiController::update'
   methods: [PATCH]
   requirements:
-    _permission: 'edit any subject content'
+    _access: 'TRUE'
 
 school_system.api.subject.delete:
   path: '/api/subjects/{id}'
@@ -154,7 +154,7 @@ school_system.api.subject.delete:
     _controller: '\Drupal\school_system\Controller\SubjectApiController::delete'
   methods: [DELETE]
   requirements:
-    _permission: 'delete any subject content'
+    _access: 'TRUE'
 
 # Attendance
 school_system.api.attendance:
@@ -196,7 +196,7 @@ school_system.api.grades:
     _controller: '\Drupal\school_system\Controller\GradeApiController::getAll'
   methods: [GET]
   requirements:
-    _permission: 'access content'
+    _access: 'TRUE'
 
 school_system.api.grade.create:
   path: '/api/grades'
@@ -204,7 +204,7 @@ school_system.api.grade.create:
     _controller: '\Drupal\school_system\Controller\GradeApiController::createGrade'
   methods: [POST]
   requirements:
-    _permission: 'create grade content'
+    _access: 'TRUE'
 
 school_system.api.grade.update:
   path: '/api/grades/{id}'
@@ -212,7 +212,7 @@ school_system.api.grade.update:
     _controller: '\Drupal\school_system\Controller\GradeApiController::update'
   methods: [PATCH]
   requirements:
-    _permission: 'edit any grade content'
+    _access: 'TRUE'
 
 school_system.api.grade.delete:
   path: '/api/grades/{id}'
@@ -220,7 +220,7 @@ school_system.api.grade.delete:
     _controller: '\Drupal\school_system\Controller\GradeApiController::delete'
   methods: [DELETE]
   requirements:
-    _permission: 'delete any grade content'
+    _access: 'TRUE'
 
 # Notifications
 school_system.api.notifications.absence:
