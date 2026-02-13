@@ -8,6 +8,10 @@ const GradeForm = () => {
   const [filteredGrades, setFilteredGrades] = useState([]);
   const [students, setStudents] = useState([]); // Cargar de Drupal
   const [subjects, setSubjects] = useState([]); // Cargar de Drupal
+  const [studentSearch, setStudentSearch] = useState(''); // Búsqueda de estudiante
+  const [studentSearchDebounced, setStudentSearchDebounced] = useState(''); // Búsqueda con debounce
+  const [filteredStudentList, setFilteredStudentList] = useState([]); // Sugerencias filtradas
+  const [showStudentDropdown, setShowStudentDropdown] = useState(false); // Mostrar/ocultar dropdown
   
   const [formData, setFormData] = useState({
     studentId: '',
@@ -26,6 +30,9 @@ const GradeForm = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const ITEMS_PER_PAGE = 10;
 
   // Cargar datos al montar
   useEffect(() => {
@@ -35,7 +42,38 @@ const GradeForm = () => {
   // Aplicar filtros cuando cambian las calificaciones
   useEffect(() => {
     applyFilters();
+    setCurrentPage(0); // Resetear a primera página
   }, [grades, filters]);
+
+  // Debounce para la búsqueda de estudiantes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setStudentSearchDebounced(studentSearch);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [studentSearch]);
+
+  // Filtrar estudiantes cuando cambia el texto de búsqueda (con debounce)
+  useEffect(() => {
+    // Si no hay búsqueda, limpiar y no mostrar dropdown
+    if (studentSearchDebounced.trim().length === 0) {
+      setFilteredStudentList([]);
+      setShowStudentDropdown(false);
+      return;
+    }
+
+    const term = studentSearchDebounced.toLowerCase();
+    const filtered = students.filter(student =>
+      student.firstName.toLowerCase().includes(term) ||
+      student.lastName.toLowerCase().includes(term) ||
+      student.email.toLowerCase().includes(term)
+    );
+
+    setFilteredStudentList(filtered.slice(0, 10)); // Máximo 10 sugerencias
+    // Solo mostrar dropdown si hay resultados
+    setShowStudentDropdown(filtered.length > 0);
+  }, [studentSearchDebounced, students])
 
   const loadAllData = async () => {
     try {
@@ -141,7 +179,9 @@ const GradeForm = () => {
   };
 
   const handleEdit = (grade) => {
+    const student = students.find(s => s.id === grade.studentId);
     setFormData(grade);
+    setStudentSearch(student ? `${student.firstName} ${student.lastName}` : '');
     setEditingId(grade.id);
     setErrorMessage('');
   };
@@ -175,6 +215,9 @@ const GradeForm = () => {
       grade: '',
       date: new Date().toISOString().split('T')[0]
     });
+    setStudentSearch('');
+    setFilteredStudentList([]);
+    setShowStudentDropdown(false);
     setEditingId(null);
     setErrorMessage('');
   };
@@ -193,6 +236,13 @@ const GradeForm = () => {
     if (grade >= 7) return 'text-green-600 bg-green-50';
     if (grade >= 4) return 'text-yellow-600 bg-yellow-50';
     return 'text-red-600 bg-red-50';
+  };
+
+  const handleSelectStudent = (student) => {
+    setFormData({ ...formData, studentId: student.id });
+    setStudentSearch(`${student.firstName} ${student.lastName}`);
+    setFilteredStudentList([]);
+    setShowStudentDropdown(false);
   };
 
   if (loading) {
@@ -233,24 +283,73 @@ const GradeForm = () => {
       <form onSubmit={handleSubmit} className="mb-8 bg-slate-50 p-6 rounded-xl border border-slate-200">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           {/* Estudiante */}
-          <div>
+          <div className="relative">
             <label className="block text-sm font-semibold text-slate-700 mb-2">
               👨‍🎓 Estudiante
             </label>
-            <select
-              value={formData.studentId}
-              onChange={(e) => setFormData({ ...formData, studentId: Number(e.target.value) })}
-              className="w-full border-2 border-slate-300 p-3 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors"
-              required
-              disabled={submitting}
-            >
-              <option value="">Seleccionar estudiante</option>
-              {students.map(student => (
-                <option key={student.id} value={student.id}>
-                  {student.firstName} {student.lastName}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Busca por nombre, apellido o email..."
+                value={studentSearch}
+                onChange={(e) => {
+                  setStudentSearch(e.target.value);
+                  // Si el usuario empieza a escribir algo diferente, limpiar la selección anterior
+                  // para permitir seleccionar otro estudiante
+                  if (e.target.value.trim().length > 0) {
+                    setFormData({...formData, studentId: ''});
+                  }
+                }}
+                onFocus={() => studentSearch.length > 0 && setShowStudentDropdown(true)}
+                className="w-full border-2 border-slate-300 p-3 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors"
+                required={!formData.studentId}
+                disabled={submitting}
+              />
+              
+              {/* Dropdown de sugerencias */}
+              {showStudentDropdown && filteredStudentList.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border-2 border-slate-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {filteredStudentList.map(student => (
+                    <button
+                      key={student.id}
+                      type="button"
+                      onClick={() => handleSelectStudent(student)}
+                      className="w-full text-left px-4 py-3 hover:bg-indigo-50 border-b border-slate-200 last:border-b-0 transition-colors"
+                    >
+                      <div className="font-semibold text-slate-900">
+                        {student.firstName} {student.lastName}
+                      </div>
+                      <div className="text-sm text-slate-600">
+                        {student.email}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Mensaje cuando no hay resultados */}
+              {studentSearchDebounced.length > 0 && !showStudentDropdown && filteredStudentList.length === 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border-2 border-slate-300 rounded-lg shadow-lg p-4 text-center text-slate-500">
+                  No se encontraron estudiantes
+                </div>
+              )}
+
+              {/* Botón para cambiar estudiante */}
+              {formData.studentId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({...formData, studentId: ''});
+                    setStudentSearch('');
+                    setFilteredStudentList([]);
+                    setShowStudentDropdown(false);
+                  }}
+                  className="absolute right-3 top-11 text-sm bg-slate-200 text-slate-700 px-2 py-1 rounded hover:bg-slate-300 transition-colors font-semibold"
+                >
+                  ✓ Cambiar
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Materia */}
@@ -376,7 +475,7 @@ const GradeForm = () => {
           </thead>
           <tbody>
             {filteredGrades.length > 0 ? (
-              filteredGrades.map((grade, index) => (
+              filteredGrades.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map((grade, index) => (
                 <tr key={grade.id} className={`border-b border-slate-200 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-indigo-50 transition-colors`}>
                   <td className="p-4 text-slate-800">{getStudentName(grade.studentId)}</td>
                   <td className="p-4 text-slate-800">{getSubjectName(grade.subjectId)}</td>
@@ -415,6 +514,29 @@ const GradeForm = () => {
             )}
           </tbody>
         </table>
+
+        {/* Paginación */}
+        {filteredGrades.length > ITEMS_PER_PAGE && (
+          <div className="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50">
+            <button
+              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+              disabled={currentPage === 0}
+              className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ← Anterior
+            </button>
+            <span className="text-sm font-semibold text-slate-600">
+              Página {currentPage + 1} de {Math.ceil(filteredGrades.length / ITEMS_PER_PAGE)}
+            </span>
+            <button
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage >= Math.ceil(filteredGrades.length / ITEMS_PER_PAGE) - 1}
+              className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente →
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Resumen */}

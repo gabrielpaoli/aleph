@@ -12,6 +12,9 @@ const TeacherForm = () => {
     subjectIds: []
   });
   const [editingId, setEditingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const ITEMS_PER_PAGE = 10;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -117,7 +120,7 @@ const TeacherForm = () => {
         </tr>
         </thead>
         <tbody>
-        {teachers.map(teacher => (
+        {teachers.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map(teacher => (
           <tr key={teacher.id} className="border-b">
             <td className="p-2">{teacher.lastName}, {teacher.firstName}</td>
             <td className="p-2">{teacher.email}</td>
@@ -147,6 +150,29 @@ const TeacherForm = () => {
         ))}
         </tbody>
       </table>
+
+      {/* Paginación */}
+      {teachers.length > ITEMS_PER_PAGE && (
+        <div className="flex items-center justify-between p-4 mt-4 border-t border-slate-200 bg-slate-50 rounded-lg">
+          <button
+            onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+            disabled={currentPage === 0}
+            className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            ← Anterior
+          </button>
+          <span className="text-sm font-semibold text-slate-600">
+            Página {currentPage + 1} de {Math.ceil(teachers.length / ITEMS_PER_PAGE)}
+          </span>
+          <button
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={currentPage >= Math.ceil(teachers.length / ITEMS_PER_PAGE) - 1}
+            className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Siguiente →
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -9,6 +9,14 @@ school_system.api.students:
   requirements:
     _permission: 'access content'
 
+school_system.api.student.by_parent:
+  path: '/api/students/parent/{parent_email}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\StudentApiController::getStudentsByParent'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
 school_system.api.student:
   path: '/api/students/{id}'
   defaults:

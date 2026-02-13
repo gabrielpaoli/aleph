@@ -73,17 +73,18 @@ class AuthApiController extends ControllerBase {
       $role = 'admin';
     }
 
-    // Buscar estudiante asociado si es padre
+    // Buscar estudiante(s) asociado(s) si es padre
     $student_id = NULL;
+    $student_ids = []; // Array de todos los estudiantes del padre
     if ($role === 'parent') {
       $query = \Drupal::entityQuery('node')
         ->condition('type', 'student')
         ->condition('field_parent_email', $email)
-        ->accessCheck(TRUE)
-        ->range(0, 1);
-      $student_ids = $query->execute();
-      if (!empty($student_ids)) {
-        $student_id = (int) reset($student_ids);
+        ->accessCheck(FALSE); // No check access - let parent see all their children
+      $ids = $query->execute();
+      if (!empty($ids)) {
+        $student_ids = array_values(array_map('intval', $ids));
+        $student_id = reset($student_ids); // El primero como principal
       }
     }
 
@@ -98,6 +99,7 @@ class AuthApiController extends ControllerBase {
         'email' => $user->getEmail(),
         'role' => $role,
         'studentId' => $student_id,
+        'studentIds' => $student_ids,
         'schoolId' => 1,
       ],
     ]);
@@ -139,15 +141,16 @@ class AuthApiController extends ControllerBase {
     }
 
     $student_id = NULL;
+    $student_ids = []; // Array de todos los estudiantes del padre
     if ($role === 'parent') {
       $query = \Drupal::entityQuery('node')
         ->condition('type', 'student')
         ->condition('field_parent_email', $user->getEmail())
-        ->accessCheck(TRUE)
-        ->range(0, 1);
-      $student_ids = $query->execute();
-      if (!empty($student_ids)) {
-        $student_id = (int) reset($student_ids);
+        ->accessCheck(FALSE); // No check access - let parent see all their children
+      $ids = $query->execute();
+      if (!empty($ids)) {
+        $student_ids = array_values(array_map('intval', $ids));
+        $student_id = reset($student_ids); // El primero como principal
       }
     }
 
@@ -156,6 +159,7 @@ class AuthApiController extends ControllerBase {
       'email' => $user->getEmail(),
       'role' => $role,
       'studentId' => $student_id,
+      'studentIds' => $student_ids,
       'schoolId' => 1,
     ]);
   }

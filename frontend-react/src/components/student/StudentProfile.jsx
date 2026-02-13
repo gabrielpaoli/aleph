@@ -15,12 +15,18 @@ const StudentProfile = () => {
   // Convertir el ID a número
   const numericId = parseInt(studentId, 10);
 
-  // Proteger acceso: si es padre, solo puede ver su propio hijo
+  // Proteger acceso: si es padre, solo puede ver sus estudiantes
   useEffect(() => {
-    if (user && user.role === 'parent' && user.studentId !== numericId) {
-      console.warn('🚫 Parent trying to access another student');
-      navigate('/estudiante');
-      return;
+    if (user && user.role === 'parent') {
+      const allowedStudents = user.studentIds && user.studentIds.length > 0 
+        ? user.studentIds 
+        : (user.studentId ? [user.studentId] : []);
+      
+      if (!allowedStudents.includes(numericId)) {
+        console.warn('🚫 Parent trying to access a student they do not own');
+        navigate('/estudiante');
+        return;
+      }
     }
   }, [user, numericId, navigate]);
 

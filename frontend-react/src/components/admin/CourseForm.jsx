@@ -14,6 +14,9 @@ const CourseForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const ITEMS_PER_PAGE = 10;
 
   // Cargar datos al montar
   useEffect(() => {
@@ -28,6 +31,7 @@ const CourseForm = () => {
       console.log('✅ Cursos cargados:', coursesData);
       setCourses(coursesData || []);
       setErrorMessage('');
+      setCurrentPage(0);
     } catch (error) {
       console.error('❌ Error cargando cursos:', error);
       setErrorMessage('Error al cargar cursos: ' + error.message);
@@ -217,7 +221,7 @@ const CourseForm = () => {
                 </td>
               </tr>
             ) : (
-              courses.map(course => (
+              courses.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map(course => (
                 <tr key={course.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
                   <td className="p-4">{course.name}</td>
                   <td className="p-4">{course.shift}</td>
@@ -244,6 +248,29 @@ const CourseForm = () => {
             )}
           </tbody>
         </table>
+
+        {/* Paginación */}
+        {courses.length > ITEMS_PER_PAGE && (
+          <div className="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50">
+            <button
+              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+              disabled={currentPage === 0}
+              className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ← Anterior
+            </button>
+            <span className="text-sm font-semibold text-slate-600">
+              Página {currentPage + 1} de {Math.ceil(courses.length / ITEMS_PER_PAGE)}
+            </span>
+            <button
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage >= Math.ceil(courses.length / ITEMS_PER_PAGE) - 1}
+              className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

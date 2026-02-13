@@ -179,10 +179,33 @@ class StudentApiController extends ControllerBase {
   }
 
   /**
+   * Get all students of a parent by email.
+   */
+  public function getStudentsByParent($parent_email) {
+    $query = \Drupal::entityQuery('node')
+      ->condition('type', 'student')
+      ->condition('field_parent_email', $parent_email)
+      ->condition('status', 1)
+      ->accessCheck(FALSE);
+
+    $nids = $query->execute();
+    $students = [];
+
+    foreach ($nids as $nid) {
+      $node = Node::load($nid);
+      if ($node) {
+        $students[] = $this->formatStudent($node);
+      }
+    }
+
+    return new JsonResponse($students);
+  }
+
+  /**
    * Format student data for API response.
    */
   private function formatStudent($node) {
-    $course_ref = $node->get('field_course_ref')->target_id;
+    $course_ref = $node->get('field_course_ref')->target_id ?? NULL;
 
     return [
       'id' => (int) $node->id(),

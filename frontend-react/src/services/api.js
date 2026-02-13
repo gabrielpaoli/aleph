@@ -74,6 +74,16 @@ export const studentService = {
     return response.data;
   },
 
+  getByParentEmail: async (parentEmail) => {
+    if (USE_DUMMY_DATA) {
+      // Filter students by parent email
+      return Promise.resolve(dummyData.students.filter(s => s.email === parentEmail));
+    }
+    console.log('🌐 Fetching students for parent:', parentEmail);
+    const response = await api.get(`/api/students/parent/${encodeURIComponent(parentEmail)}`);
+    return response.data;
+  },
+
   create: async (studentData) => {
     if (USE_DUMMY_DATA) {
       const newStudent = { ...studentData, id: Date.now() };
@@ -425,10 +435,20 @@ export const authService = {
       return Promise.resolve({ success: false, error: 'Credenciales inválidas' });
     }
 
-    console.log('🌐 Authenticating via API');
+    console.log('🌐 Authenticating via API:', email);
     try {
       const response = await api.post('/api/auth/login', { email, password });
-      console.log('Login response:', response.data);
+      console.log('✅ Full login response:', response.data);
+      
+      // Debug para padres
+      if (response.data.user && response.data.user.role === 'parent') {
+        console.log('👨‍👩‍👧 Parent login detected');
+        console.log('   Full user object:', response.data.user);
+        console.log('   studentIds type:', typeof response.data.user.studentIds);
+        console.log('   studentIds value:', response.data.user.studentIds);
+        console.log('   studentIds length:', response.data.user.studentIds?.length);
+        console.log('   studentId (main):', response.data.user.studentId);
+      }
 
       if (response.data.success && response.data.token) {
         localStorage.setItem('authToken', response.data.token);
@@ -437,7 +457,7 @@ export const authService = {
 
       return response.data;
     } catch (error) {
-      console.error('Login API error:', error);
+      console.error('❌ Login API error:', error);
       throw error;
     }
   },

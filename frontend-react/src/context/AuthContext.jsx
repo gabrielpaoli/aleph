@@ -26,10 +26,28 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       try {
+        const parsed = JSON.parse(savedUser);
+        console.log('📦 Loaded user from localStorage:', parsed);
+        
+        // Debug for parents
+        if (parsed.role === 'parent') {
+          console.log('👨‍👩‍👧 Parent user from localStorage');
+          console.log('   studentIds:', parsed.studentIds);
+          console.log('   studentIds count:', parsed.studentIds?.length || 0);
+        }
+        
         // Verificar que la sesión sigue activa en el servidor
         const currentUser = await authService.getCurrentUser();
+        console.log('✅ Session verified with server:', currentUser.email);
+        
+        // Debug para padres
+        if (currentUser.role === 'parent') {
+          console.log('👨‍👩‍👧 Parent user from server');
+          console.log('   studentIds:', currentUser.studentIds);
+          console.log('   studentIds count:', currentUser.studentIds?.length || 0);
+        }
+        
         setUser(currentUser);
-        console.log('✅ Session restored:', currentUser.email);
       } catch (error) {
         console.warn('⚠️ Session expired, clearing local data');
         localStorage.removeItem('user');
@@ -46,12 +64,19 @@ export const AuthProvider = ({ children }) => {
       const result = await authService.login(email, password);
 
       if (result.success) {
+        console.log('✅ Login successful. User data:', result.user);
         setUser(result.user);
         localStorage.setItem('user', JSON.stringify(result.user));
         localStorage.setItem('authToken', result.token);
-        console.log('✅ Login successful');
-        console.log('   User:', result.user);
-        console.log('   Token:', result.token);
+        
+        // Debug para padres
+        if (result.user.role === 'parent') {
+          console.log('👨‍👩‍👧 Parent user logged in');
+          console.log('   Has studentIds:', !!result.user.studentIds);
+          console.log('   studentIds count:', result.user.studentIds?.length || 0);
+          console.log('   studentIds:', result.user.studentIds);
+        }
+        
         return { success: true, user: result.user };
       }
 

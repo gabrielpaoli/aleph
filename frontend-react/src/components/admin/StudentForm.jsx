@@ -19,6 +19,9 @@ const StudentForm = () => {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(0);
+
+  const ITEMS_PER_PAGE = 10;
 
   // Cargar estudiantes y cursos al montar
   useEffect(() => {
@@ -27,6 +30,7 @@ const StudentForm = () => {
 
   // Filtrar estudiantes cuando cambia la búsqueda o filtro
   useEffect(() => {
+    setCurrentPage(0); // Resetear a primera página
     filterStudents();
   }, [students, searchTerm, filterCourse]);
 
@@ -296,7 +300,7 @@ const StudentForm = () => {
                 </td>
               </tr>
             ) : (
-              filteredStudents.map(student => {
+              filteredStudents.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map(student => {
                 const course = courses.find(c => c.id === student.courseId);
                 return (
                   <tr key={student.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
@@ -350,6 +354,29 @@ const StudentForm = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Paginación */}
+        {filteredStudents.length > ITEMS_PER_PAGE && (
+          <div className="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50">
+            <button
+              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+              disabled={currentPage === 0}
+              className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ← Anterior
+            </button>
+            <span className="text-sm font-semibold text-slate-600">
+              Página {currentPage + 1} de {Math.ceil(filteredStudents.length / ITEMS_PER_PAGE)}
+            </span>
+            <button
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage >= Math.ceil(filteredStudents.length / ITEMS_PER_PAGE) - 1}
+              className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
