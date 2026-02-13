@@ -55,6 +55,24 @@ class AttendanceApiController extends ControllerBase {
         $query->condition('field_date', $start_date, '>=');
         $query->condition('field_date', $end_date, '<=');
       }
+    } elseif ($course_id && $year && $month === NULL) {
+      // Filtrar por curso y año completo (sin mes específico)
+      $student_query = \Drupal::entityQuery('node')
+        ->condition('type', 'student')
+        ->condition('field_course_ref', $course_id)
+        ->accessCheck(FALSE);
+      $student_ids = $student_query->execute();
+
+      if (!empty($student_ids)) {
+        $query->condition('field_student_ref', $student_ids, 'IN');
+
+        // Filtrar por año
+        $start_date = "$year-01-01";
+        $end_date = "$year-12-31";
+
+        $query->condition('field_date', $start_date, '>=');
+        $query->condition('field_date', $end_date, '<=');
+      }
     }
 
     $nids = $query->execute();

@@ -300,6 +300,23 @@ export const attendanceService = {
     return response.data;
   },
 
+  getByCourseAndYear: async (courseId, year) => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for attendance (full year)');
+      const students = dummyData.students.filter(s => s.courseId === courseId);
+      const studentIds = students.map(s => s.id);
+      return Promise.resolve(
+        dummyData.attendance.filter(a =>
+          studentIds.includes(a.studentId) &&
+          a.date.startsWith(`${year}`)
+        )
+      );
+    }
+    console.log(`🌐 Fetching attendance for course ${courseId}, year ${year}`);
+    const response = await api.get(`/api/attendance?courseId=${courseId}&year=${year}`);
+    return response.data;
+  },
+
   update: async (id, attendanceData) => {
     if (USE_DUMMY_DATA) {
       const index = dummyData.attendance.findIndex(a => a.id === id);

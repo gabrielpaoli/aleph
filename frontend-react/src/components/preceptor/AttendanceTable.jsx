@@ -16,6 +16,8 @@ const AttendanceTable = () => {
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [attendance, setAttendance] = useState([]);
+  const [yearAttendance, setYearAttendance] = useState([]);
+  const [allYearsAttendance, setAllYearsAttendance] = useState({}); // Por curso
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -25,6 +27,13 @@ const AttendanceTable = () => {
   useEffect(() => {
     loadCourses();
   }, []);
+
+  // Cargar estadísticas anuales cuando los cursos se cargan o cambia el año
+  useEffect(() => {
+    if (courses.length > 0) {
+      loadAllCoursesYearAttendance();
+    }
+  }, [courses, selectedYear]);
 
   // Cargar estudiantes cuando cambia el curso
   useEffect(() => {
@@ -39,6 +48,13 @@ const AttendanceTable = () => {
       loadAttendance();
     }
   }, [selectedCourse, selectedMonth, selectedYear]);
+
+  // Cargar asistencias anuales cuando cambia curso o año
+  useEffect(() => {
+    if (selectedCourse) {
+      loadYearAttendance();
+    }
+  }, [selectedCourse, selectedYear]);
 
   const loadCourses = async () => {
     try {
@@ -114,6 +130,67 @@ const AttendanceTable = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadYearAttendance = async () => {
+    try {
+      console.log('📅 Loading full year attendance for:', {
+        courseId: selectedCourse,
+        year: selectedYear
+      });
+
+      const yearData = await attendanceService.getByCourseAndYear(
+        selectedCourse,
+        selectedYear
+      );
+
+      console.log('✅ Year attendance loaded:', yearData.length, 'records');
+      setYearAttendance(yearData);
+    } catch (err) {
+      console.error('❌ Error loading year attendance:', err);
+    }
+  };
+
+  const loadAllCoursesYearAttendance = async () => {
+    try {
+      console.log('📚 Loading full year attendance for all courses...');
+      const courseStats = {};
+
+      for (const course of courses) {
+        try {
+          const yearData = await attendanceService.getByCourseAndYear(
+            course.id,
+            selectedYear
+          );
+          courseStats[course.id] = yearData;
+        } catch (err) {
+          console.error(`Error loading attendance for course ${course.id}:`, err);
+          courseStats[course.id] = [];
+        }
+      }
+
+      console.log('✅ All courses year attendance loaded');
+      setAllYearsAttendance(courseStats);
+    } catch (err) {
+      console.error('❌ Error loading all courses attendance:', err);
+    }
+  };
+
+  const getStatsForCourse = (courseId) => {
+    const stats = {
+      totalPresent: 0,
+      totalAbsent: 0,
+      totalHalfAbsent: 0
+    };
+
+    const courseData = allYearsAttendance[courseId] || [];
+    courseData.forEach(record => {
+      if (record.status === ATTENDANCE_STATUS.PRESENT) stats.totalPresent++;
+      if (record.status === ATTENDANCE_STATUS.ABSENT) stats.totalAbsent++;
+      if (record.status === ATTENDANCE_STATUS.HALF_ABSENT) stats.totalHalfAbsent++;
+    });
+
+    return stats;
   };
 
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
@@ -203,6 +280,23 @@ const AttendanceTable = () => {
     return stats;
   };
 
+  const getYearStats = () => {
+    const yearStats = {
+      totalPresent: 0,
+      totalAbsent: 0,
+      totalHalfAbsent: 0
+    };
+
+    // Usar los datos de asistencia anual cargados
+    yearAttendance.forEach(record => {
+      if (record.status === ATTENDANCE_STATUS.PRESENT) yearStats.totalPresent++;
+      if (record.status === ATTENDANCE_STATUS.ABSENT) yearStats.totalAbsent++;
+      if (record.status === ATTENDANCE_STATUS.HALF_ABSENT) yearStats.totalHalfAbsent++;
+    });
+
+    return yearStats;
+  };
+
   if (loading && courses.length === 0) {
     return (
       <div className="p-6 flex justify-center items-center">
@@ -234,7 +328,7 @@ const AttendanceTable = () => {
   return (
     <div className="p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
       <div className="max-w-full mx-auto">
-        <h2 className="text-3xl font-bold mb-6 text-slate-800">📋 Tabla de Asistencias</h2>
+        <h2 className="text-3xl font-bold mb-6 text-slate-800">📋 Control de Asistencias</h2>
 
         {/* Filtros */}
         <div className="mb-6 flex gap-4 items-center flex-wrap bg-white p-4 rounded-xl shadow-sm">
@@ -299,10 +393,36 @@ const AttendanceTable = () => {
           )}
         </div>
 
-        {/* Debug info */}
-        <div className="mb-4 bg-blue-50 border border-blue-200 p-3 rounded text-sm">
-          <strong>Debug:</strong> Curso seleccionado: {selectedCourse}, {students.length} estudiantes, {attendance.length} registros de asistencia
-        </div>
+        {/* Resumen anual por curso */}
+        {courses.length > 0 && (
+          <div className="mb-6 p-4 bg-white rounded-xl shadow-sm border-l-4 border-indigo-500">
+            <h3 className="font-semibold text-slate-800 mb-4">📊 Resumen Anual {selectedYear} - Por Curso</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {courses.map(course => {
+                const stats = getStatsForCourse(course.id);
+                return (
+                  <div key={course.id} className={`p-4 rounded-lg border-2 transition-all ${selectedCourse === course.id ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-slate-50'}`}>
+                    <h4 className="font-semibold text-slate-800 mb-3 text-center">{course.name} - {course.shift}</h4>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex justify-between items-center p-2 bg-emerald-100 rounded">
+                        <span className="text-sm font-medium text-emerald-800">Presentes:</span>
+                        <span className="text-lg font-bold text-emerald-700">{stats.totalPresent}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-rose-100 rounded">
+                        <span className="text-sm font-medium text-rose-800">Faltas:</span>
+                        <span className="text-lg font-bold text-rose-700">{stats.totalAbsent}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-amber-100 rounded">
+                        <span className="text-sm font-medium text-amber-800">Media Falta:</span>
+                        <span className="text-lg font-bold text-amber-700">{stats.totalHalfAbsent}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {students.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">

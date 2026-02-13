@@ -32,20 +32,13 @@ class SchoolSystemCommands extends DrushCommands {
     // Limpiar datos existentes
     $this->cleanExistingData();
 
-    // Crear escuelas
-    $this->output()->writeln('📚 Creating schools...');
-    $school1 = $this->createSchool('escuela1');
-    $school2 = $this->createSchool('escuela2');
-
     // Crear cursos
     $this->output()->writeln('📖 Creating courses...');
     $courses = [
-      '1A_tarde' => $this->createCourse('1A', 'Tarde', $school1),
-      '1B_manana' => $this->createCourse('1B', 'Mañana', $school1),
-      '2A_tarde' => $this->createCourse('2A', 'Tarde', $school1),
-      '2B_manana' => $this->createCourse('2B', 'Mañana', $school1),
-      '1A_tarde_e2' => $this->createCourse('1A', 'Tarde', $school2),
-      '1B_manana_e2' => $this->createCourse('1B', 'Mañana', $school2),
+      '1A_tarde' => $this->createCourse('1A', 'Tarde'),
+      '1B_manana' => $this->createCourse('1B', 'Mañana'),
+      '2A_tarde' => $this->createCourse('2A', 'Tarde'),
+      '2B_manana' => $this->createCourse('2B', 'Mañana'),
     ];
 
     // Crear materias para 1A
@@ -92,26 +85,26 @@ class SchoolSystemCommands extends DrushCommands {
 
     // Crear usuarios
     $this->output()->writeln('👤 Creating users...');
-    $this->createUser('admin@escuela1.com', 'admin123', 'administrator');
-    $this->createUser('preceptor@escuela1.com', 'preceptor', 'preceptor');
-    $this->createUser('preceptor@escuela2.com', 'preceptor', 'preceptor');
+    $this->createUser('admin@escuela1.com', '1234', 'administrator');
+    $this->createUser('preceptor@escuela1.com', '1234', 'preceptor');
+    $this->createUser('preceptor@escuela2.com', '1234', 'preceptor');
     
     // Crear directivo
-    $this->createUser('directivo@escuela1.com', 'directivo123', 'directivo');
+    $this->createUser('directivo@escuela1.com', '1234', 'directivo');
     
     // Crear docentes con materias asignadas
-    $this->createUser('roberto.diaz@escuela1.com', 'docente123', 'docente', [
+    $this->createUser('roberto.diaz@escuela1.com', '1234', 'docente', [
       $subjects_1a['matematicas'],
       $subjects_1b['matematicas_1b'],
     ]);
-    $this->createUser('laura.morales@escuela1.com', 'docente123', 'docente', [
+    $this->createUser('laura.morales@escuela1.com', '1234', 'docente', [
       $subjects_1a['lengua'],
       $subjects_1b['lengua_1b'],
     ]);
 
     foreach ($students as $student) {
       $email = $student->get('field_parent_email')->value;
-      $this->createUser($email, 'parent', 'parent');
+      $this->createUser($email, '1234', 'parent');
     }
 
     // Crear notas
@@ -153,7 +146,6 @@ class SchoolSystemCommands extends DrushCommands {
     $this->output()->writeln('');
 
     $types = [
-      'school' => 'Schools',
       'course' => 'Courses',
       'subject' => 'Subjects',
       'student' => 'Students',
@@ -173,7 +165,7 @@ class SchoolSystemCommands extends DrushCommands {
 
   // Métodos privados helper
   private function cleanExistingData() {
-    $types = ['attendance', 'grade', 'student', 'teacher', 'subject', 'course', 'school'];
+    $types = ['attendance', 'grade', 'student', 'teacher', 'subject', 'course'];
 
     foreach ($types as $type) {
       $query = \Drupal::entityQuery('node')
@@ -201,24 +193,12 @@ class SchoolSystemCommands extends DrushCommands {
     }
   }
 
-  private function createSchool($name) {
-    $node = Node::create([
-      'type' => 'school',
-      'title' => $name,
-      'field_school_name' => $name,
-      'status' => 1,
-    ]);
-    $node->save();
-    return $node->id();
-  }
-
-  private function createCourse($name, $shift, $school_id) {
+  private function createCourse($name, $shift) {
     $node = Node::create([
       'type' => 'course',
       'title' => "$name - $shift",
       'field_course_name' => $name,
       'field_shift' => $shift,
-      'field_school_ref' => ['target_id' => $school_id],
       'status' => 1,
     ]);
     $node->save();

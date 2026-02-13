@@ -84,12 +84,20 @@ class StudentApiController extends ControllerBase {
     }
 
     try {
+      // Get parent email from the request
+      $parent_email = $data['email'] ?? '';
+      
+      // Create parent user if email is provided
+      if (!empty($parent_email)) {
+        $this->createParentUser($parent_email);
+      }
+
       $node = Node::create([
         'type' => 'student',
         'title' => ($data['firstName'] ?? '') . ' ' . ($data['lastName'] ?? ''),
         'field_first_name' => $data['firstName'] ?? '',
         'field_last_name' => $data['lastName'] ?? '',
-        'field_parent_email' => $data['email'] ?? '',
+        'field_parent_email' => $parent_email,
         'field_course_ref' => isset($data['courseId']) ? ['target_id' => $data['courseId']] : NULL,
         'field_legajo' => $data['legajo'] ?? rand(1000, 9999),
         'uid' => $current_user->id(), // Asignar el usuario actual como autor
@@ -238,6 +246,51 @@ class StudentApiController extends ControllerBase {
     }
     catch (\Exception $e) {
       return new JsonResponse(['error' => $e->getMessage()], 500);
+    }
+  }
+
+  /**
+   * Create a parent user account if it doesn't exist.
+   */
+  private function createParentUser($email) {
+    // Check if user already exists with this email
+    $existing_users = \Drupal::entityQuery('user')
+      ->condition('mail', $email)
+      ->accessCheck(FALSE)
+      ->execute();
+
+    if (!empty($existing_users)) {
+      \Drupal::logger('school_system')->notice('Parent user already exists with email: @email', [
+        '@email' => $email,
+      ]);
+      return;
+    }
+
+    try {
+      // Generate a random password
+      $random_password = bin2hex(random_bytes(8));
+
+      // Create new user with parent role
+      $user = \Drupal\user\Entity\User::create([
+        'name' => $email,
+        'mail' => $email,
+        'pass' => $random_password,
+        'status' => 1,
+        'roles' => ['parent'],
+      ]);
+
+      $user->save();
+
+      \Drupal::logger('school_system')->notice('Parent user created successfully: @email with password: @pass and parent role', [
+        '@email' => $email,
+        '@pass' => $random_password,
+      ]);
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('school_system')->error('Error creating parent user @email: @message', [
+        '@email' => $email,
+        '@message' => $e->getMessage(),
+      ]);
     }
   }
 

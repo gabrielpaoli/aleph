@@ -31,10 +31,6 @@ function school_system_install() {
  */
 function _school_system_create_content_types() {
   $types = [
-    'school' => [
-      'name' => 'School',
-      'description' => 'Escuela',
-    ],
     'course' => [
       'name' => 'Course',
       'description' => 'Curso',
@@ -78,9 +74,6 @@ function _school_system_create_content_types() {
  */
 function _school_system_create_fields() {
 
-  // ========== SCHOOL FIELDS ==========
-  _school_system_create_field('node', 'school', 'field_school_name', 'string', 'School Name', FALSE);
-
   // ========== COURSE FIELDS ==========
   _school_system_create_field('node', 'course', 'field_course_name', 'string', 'Course Name', FALSE);
   _school_system_create_field('node', 'course', 'field_shift', 'list_string', 'Shift', FALSE, [
@@ -89,10 +82,6 @@ function _school_system_create_fields() {
       'Tarde' => 'Tarde',
       'Noche' => 'Noche',
     ],
-  ]);
-  _school_system_create_field('node', 'course', 'field_school_ref', 'entity_reference', 'School', FALSE, [
-    'target_type' => 'node',
-    'handler_settings' => ['target_bundles' => ['school' => 'school']],
   ]);
 
   // ========== SUBJECT FIELDS ==========
@@ -233,7 +222,7 @@ function _school_system_create_roles() {
  */
 function school_system_uninstall() {
   // Eliminar content types y campos
-  $types = ['school', 'course', 'subject', 'student', 'teacher', 'attendance', 'grade'];
+  $types = ['course', 'subject', 'student', 'teacher', 'attendance', 'grade'];
 
   foreach ($types as $type) {
     $node_type = NodeType::load($type);
