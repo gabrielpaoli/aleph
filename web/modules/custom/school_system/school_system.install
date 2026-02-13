@@ -55,6 +55,10 @@ function _school_system_create_content_types() {
       'name' => 'Grade',
       'description' => 'Calificación',
     ],
+    'note' => [
+      'name' => 'Note',
+      'description' => 'Nota para Padres',
+    ],
   ];
 
   foreach ($types as $type_id => $type_info) {
@@ -142,6 +146,24 @@ function _school_system_create_fields() {
   _school_system_create_field('node', 'grade', 'field_date', 'datetime', 'Date', FALSE, [
     'datetime_type' => 'date',
   ]);
+
+  // ========== NOTE FIELDS ==========
+  _school_system_create_field('node', 'note', 'field_title_note', 'string', 'Title', FALSE);
+  _school_system_create_field('node', 'note', 'field_content_note', 'text_long', 'Content', FALSE);
+  _school_system_create_field('node', 'note', 'field_student_ref', 'entity_reference', 'Student (Individual)', FALSE, [
+    'target_type' => 'node',
+    'handler_settings' => ['target_bundles' => ['student' => 'student']],
+  ]);
+  _school_system_create_field('node', 'note', 'field_course_ref', 'entity_reference', 'Course (All Students)', FALSE, [
+    'target_type' => 'node',
+    'handler_settings' => ['target_bundles' => ['course' => 'course']],
+  ]);
+  _school_system_create_field('node', 'note', 'field_author_ref', 'entity_reference', 'Author (User)', FALSE, [
+    'target_type' => 'user',
+  ]);
+  _school_system_create_field('node', 'note', 'field_date_note', 'datetime', 'Date', FALSE, [
+    'datetime_type' => 'datetime',
+  ]);
 }
 
 /**
@@ -222,7 +244,7 @@ function _school_system_create_roles() {
  */
 function school_system_uninstall() {
   // Eliminar content types y campos
-  $types = ['course', 'subject', 'student', 'teacher', 'attendance', 'grade'];
+  $types = ['course', 'subject', 'student', 'teacher', 'attendance', 'grade', 'note'];
 
   foreach ($types as $type) {
     $node_type = NodeType::load($type);

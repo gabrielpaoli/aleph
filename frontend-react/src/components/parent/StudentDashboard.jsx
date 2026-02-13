@@ -6,6 +6,7 @@ import { ATTENDANCE_STATUS } from '../../services/dummyData';
 import { studentService, courseService, subjectService, attendanceService } from '../../services/api';
 import { useGrades } from '../../hooks/useGrades';
 import { useAuth } from '../../context/AuthContext';
+import NotesList from './NotesList';
 
 const StudentDashboard = ({ studentId: initialStudentId }) => {
   const navigate = useNavigate();
@@ -291,6 +292,11 @@ const StudentDashboard = ({ studentId: initialStudentId }) => {
               })}
             </div>
           )}
+        </div>
+
+        {/* Notas Recibidas */}
+        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-6">
+          <NotesList studentId={currentStudentId} />
         </div>
       </div>
     </div>

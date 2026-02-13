@@ -23,11 +23,30 @@ function school_system_help($route_name, RouteMatchInterface $route_match) {
  * Implements hook_mail().
  */
 function school_system_mail($key, &$message, $params) {
+  // Ensure headers array exists
+  if (!isset($message['headers'])) {
+    $message['headers'] = [];
+  }
+  
+  $message['headers']['Content-Type'] = 'text/plain; charset=UTF-8';
+
   switch ($key) {
     case 'absence_notification':
-      $message['subject'] = $params['subject'];
-      $message['body'][] = $params['body'];
-      $message['headers']['Content-Type'] = 'text/plain; charset=UTF-8';
+      $message['subject'] = $params['subject'] ?? 'Notificación de Ausencia';
+      $message['body'][] = $params['body'] ?? '';
+      break;
+
+    case 'note_notification':
+      $message['subject'] = t('Nota de @author para @student', [
+        '@author' => $params['author_name'] ?? 'Docente',
+        '@student' => $params['student_name'] ?? 'Estudiante',
+      ]);
+      $message['body'][] = t('Título: @title', ['@title' => $params['note_title'] ?? '']);
+      $message['body'][] = '';
+      $message['body'][] = t('Contenido:');
+      $message['body'][] = $params['note_content'] ?? '';
+      $message['body'][] = '';
+      $message['body'][] = t('De: @author', ['@author' => $params['author_name'] ?? 'Docente']);
       break;
   }
 }

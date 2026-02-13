@@ -21,11 +21,6 @@ class CourseApiController extends ControllerBase {
       ->condition('status', 1)
       ->accessCheck(FALSE);
 
-    $school_id = $request->query->get('schoolId');
-    if ($school_id) {
-      $query->condition('field_school_ref', $school_id);
-    }
-
     $nids = $query->execute();
     $courses = [];
 
@@ -55,7 +50,6 @@ class CourseApiController extends ControllerBase {
         'title' => ($data['name'] ?? '') . ' - ' . ($data['shift'] ?? ''),
         'field_course_name' => $data['name'] ?? '',
         'field_shift' => $data['shift'] ?? '',
-        'field_school_ref' => isset($data['schoolId']) ? ['target_id' => $data['schoolId']] : NULL,
       ]);
       $node->save();
 
@@ -88,9 +82,6 @@ class CourseApiController extends ControllerBase {
       }
       if (isset($data['shift'])) {
         $node->set('field_shift', $data['shift']);
-      }
-      if (isset($data['schoolId'])) {
-        $node->set('field_school_ref', ['target_id' => $data['schoolId']]);
       }
 
       $name = $node->get('field_course_name')->value ?? '';
@@ -128,7 +119,6 @@ class CourseApiController extends ControllerBase {
    * Format course data for API response.
    */
   private function formatCourse($node) {
-    $school_ref = $node->get('field_school_ref')->target_id;
     $name = $node->get('field_course_name')->value ?? '';
     $title = $node->getTitle();
     
@@ -141,7 +131,6 @@ class CourseApiController extends ControllerBase {
       'id' => (int) $node->id(),
       'name' => $name,
       'shift' => $node->get('field_shift')->value ?? '',
-      'schoolId' => $school_ref ? (int) $school_ref : NULL,
     ];
   }
 

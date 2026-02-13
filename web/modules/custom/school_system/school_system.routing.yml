@@ -377,3 +377,36 @@ school_system.api.teacher.delete:
   methods: [DELETE]
   requirements:
     _permission: 'bypass node access'
+
+# Notes
+school_system.api.notes:
+  path: '/api/notes'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\NotesApiController::getAll'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.notes.by_student:
+  path: '/api/notes/student/{student_id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\NotesApiController::getByStudent'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.notes.by_course:
+  path: '/api/notes/course/{course_id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\NotesApiController::getByCourse'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.notes.create:
+  path: '/api/notes'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\NotesApiController::createNote'
+  methods: [POST]
+  requirements:
+    _access: 'TRUE'

@@ -767,4 +767,73 @@ export const teacherService = {
   }
 };
 
+// ============ NOTES ============
+export const noteService = {
+  create: async (noteData) => {
+    if (USE_DUMMY_DATA) {
+      const newNote = { ...noteData, id: Date.now() };
+      dummyData.notes = dummyData.notes || [];
+      dummyData.notes.push(newNote);
+      return Promise.resolve(newNote);
+    }
+    console.log('🌐 Creating note in API');
+    try {
+      const response = await api.post('/api/notes', noteData);
+      console.log('✅ Note created:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error creating note:', error);
+      throw error;
+    }
+  },
+
+  getAll: async () => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for notes');
+      return Promise.resolve(dummyData.notes || []);
+    }
+    console.log('🌐 Fetching all notes from API');
+    try {
+      const response = await api.get(`/api/notes?_t=${Date.now()}`);
+      console.log('✅ Notes from API:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching notes:', error);
+      throw error;
+    }
+  },
+
+  getByStudent: async (studentId) => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for notes');
+      return Promise.resolve((dummyData.notes || []).filter(n => n.studentId === studentId));
+    }
+    console.log(`🌐 Fetching notes for student ${studentId}`);
+    try {
+      const response = await api.get(`/api/notes/student/${studentId}?_t=${Date.now()}`);
+      console.log('✅ Student notes from API:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching student notes:', error);
+      throw error;
+    }
+  },
+
+  getByCourse: async (courseId) => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for notes');
+      return Promise.resolve((dummyData.notes || []).filter(n => n.courseId === courseId));
+    }
+    console.log(`🌐 Fetching notes for course ${courseId}`);
+    try {
+      const response = await api.get(`/api/notes/course/${courseId}?_t=${Date.now()}`);
+      console.log('✅ Course notes from API:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching course notes:', error);
+      throw error;
+    }
+  }
+};
+
 export default api;

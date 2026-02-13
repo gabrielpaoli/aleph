@@ -7,6 +7,7 @@ import SubjectForm from './SubjectForm';
 import TeacherManagement from './TeacherManagement';
 import GradeForm from './GradeForm';
 import UserManagement from './UserManagement';
+import NoteForm from './NoteForm';
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('students');
@@ -17,7 +18,8 @@ const AdminPanel = () => {
     { id: 'subjects', label: 'Materias', icon: '📖', component: SubjectForm },
     { id: 'grades', label: 'Calificaciones', icon: '⭐', component: GradeForm },
     { id: 'teachers', label: 'Docentes', icon: '👨‍🏫', component: TeacherManagement },
-    { id: 'users', label: 'Usuarios', icon: '👥', component: UserManagement }
+    { id: 'users', label: 'Usuarios', icon: '👥', component: UserManagement },
+    { id: 'notes', label: 'Notas', icon: '📝', component: NoteForm }
   ];
 
   const ActiveComponent = tabs.find(t => t.id === activeTab)?.component;
@@ -28,12 +30,12 @@ const AdminPanel = () => {
         <h2 className="text-3xl font-bold mb-6 text-slate-800">⚙️ Panel de Administración</h2>
 
         <div className="mb-6">
-          <div className="flex gap-2 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+          <div className="flex gap-2 bg-white p-2 rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
             {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 px-6 py-3 font-semibold rounded-lg transition-all ${
+                className={`flex-shrink-0 px-6 py-3 font-semibold rounded-lg transition-all ${
                   activeTab === tab.id
                     ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md'
                     : 'text-slate-600 hover:bg-slate-100'

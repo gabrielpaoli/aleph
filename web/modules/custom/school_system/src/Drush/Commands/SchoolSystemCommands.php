@@ -152,6 +152,7 @@ class SchoolSystemCommands extends DrushCommands {
       'teacher' => 'Teachers',
       'grade' => 'Grades',
       'attendance' => 'Attendance Records',
+      'note' => 'Notes',
     ];
 
     foreach ($types as $type => $label) {
@@ -165,7 +166,7 @@ class SchoolSystemCommands extends DrushCommands {
 
   // Métodos privados helper
   private function cleanExistingData() {
-    $types = ['attendance', 'grade', 'student', 'teacher', 'subject', 'course'];
+    $types = ['attendance', 'grade', 'note', 'student', 'teacher', 'subject', 'course'];
 
     foreach ($types as $type) {
       $query = \Drupal::entityQuery('node')
