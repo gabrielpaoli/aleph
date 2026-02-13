@@ -1,17 +1,22 @@
 // components/admin/GradeForm.jsx
 
 import React, { useState, useEffect } from 'react';
-import { gradeService, studentService, subjectService } from '../../services/api';
+import { gradeService, studentService, subjectService, courseService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const GradeForm = () => {
+  const { user } = useAuth();
+  
   const [grades, setGrades] = useState([]);
   const [filteredGrades, setFilteredGrades] = useState([]);
   const [students, setStudents] = useState([]); // Cargar de Drupal
   const [subjects, setSubjects] = useState([]); // Cargar de Drupal
+  const [allSubjects, setAllSubjects] = useState([]); // Todas las materias (para admin)
   const [studentSearch, setStudentSearch] = useState(''); // Búsqueda de estudiante
   const [studentSearchDebounced, setStudentSearchDebounced] = useState(''); // Búsqueda con debounce
   const [filteredStudentList, setFilteredStudentList] = useState([]); // Sugerencias filtradas
   const [showStudentDropdown, setShowStudentDropdown] = useState(false); // Mostrar/ocultar dropdown
+  const [teacherCourses, setTeacherCourses] = useState([]); // Cursos del docente
   
   const [formData, setFormData] = useState({
     studentId: '',
@@ -33,11 +38,14 @@ const GradeForm = () => {
   const [currentPage, setCurrentPage] = useState(0);
 
   const ITEMS_PER_PAGE = 10;
+  
+  // Determinar si el usuario es docente
+  const isTeacher = user && user.role === 'docente';
 
-  // Cargar datos al montar
+  // Cargar datos al montar o cuando cambia el usuario
   useEffect(() => {
     loadAllData();
-  }, []);
+  }, [user, isTeacher]);
 
   // Aplicar filtros cuando cambian las calificaciones
   useEffect(() => {
@@ -79,6 +87,7 @@ const GradeForm = () => {
     try {
       setLoading(true);
       console.log('📥 Cargando datos del backend...');
+      console.log('👤 Usuario actual:', user);
       
       // Cargar calificaciones
       const gradesData = await gradeService.getAll();
@@ -95,7 +104,36 @@ const GradeForm = () => {
       console.log('📥 Cargando materias de Drupal...');
       const subjectsData = await subjectService.getAll();
       console.log('✅ Materias cargadas de Drupal:', subjectsData);
-      setSubjects(subjectsData || []);
+      setAllSubjects(subjectsData || []);
+      
+      // Si es docente, filtrar solo sus materias y cursos
+      if (isTeacher && user?.subjectIds?.length > 0) {
+        console.log('👨‍🏫 Docente detectado. Filtrando materias:', user.subjectIds);
+        
+        // Filtrar materias del docente
+        const teacherSubjects = (subjectsData || []).filter(subject =>
+          user.subjectIds.includes(subject.id)
+        );
+        console.log('✅ Materias del docente:', teacherSubjects);
+        setSubjects(teacherSubjects);
+        
+        // Obtener cursos únicos del docente
+        const courses = await courseService.getAll();
+        const coursesSet = new Set();
+        teacherSubjects.forEach(subject => {
+          if (subject.courseId) {
+            coursesSet.add(subject.courseId);
+          }
+        });
+        const teacherCourseIds = Array.from(coursesSet);
+        const teacherCoursesList = courses.filter(c => teacherCourseIds.includes(c.id));
+        console.log('✅ Cursos del docente:', teacherCoursesList);
+        setTeacherCourses(teacherCourseIds);
+      } else {
+        // Admin ve todas las materias
+        setSubjects(subjectsData || []);
+        setTeacherCourses([]);
+      }
       
       setErrorMessage('');
     } catch (error) {
@@ -108,6 +146,13 @@ const GradeForm = () => {
 
   const applyFilters = () => {
     let filtered = grades;
+    
+    // Si es docente, filtrar solo sus calificaciones (de sus materias)
+    if (isTeacher && subjects.length > 0) {
+      const teacherSubjectIds = subjects.map(s => s.id);
+      filtered = filtered.filter(g => teacherSubjectIds.includes(g.subjectId));
+      console.log('📊 Calificaciones filtradas para docente:', filtered.length, 'de', grades.length);
+    }
     
     if (filters.studentId) {
       filtered = filtered.filter(g => g.studentId === Number(filters.studentId));
@@ -208,6 +253,15 @@ const GradeForm = () => {
     }
   };
 
+  const canEditGrade = (grade) => {
+    // Admin puede editar todas
+    if (!isTeacher) return true;
+    
+    // Docente solo puede editar su propia materia
+    const subjectOwned = subjects.some(s => s.id === grade.subjectId);
+    return subjectOwned;
+  };
+
   const handleCancel = () => {
     setFormData({
       studentId: '',
@@ -262,8 +316,21 @@ const GradeForm = () => {
       {/* Header */}
       <div className="mb-6">
         <h3 className="text-2xl font-bold text-slate-800 mb-2">📝 Gestionar Calificaciones</h3>
-        <p className="text-slate-600">Agrega, edita o elimina calificaciones de estudiantes directamente en Drupal</p>
+        <p className="text-slate-600">
+          {isTeacher 
+            ? '📚 Estás viendo solo tus calificaciones (de los cursos donde enseñas)'
+            : 'Agrega, edita o elimina calificaciones de estudiantes directamente en Drupal'
+          }
+        </p>
       </div>
+
+      {/* Alerta para docentes */}
+      {isTeacher && subjects.length > 0 && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-300 rounded-lg text-blue-800">
+          <p className="font-semibold">📚 Tus Materias: {subjects.map(s => s.name).join(', ')}</p>
+          <p className="text-sm mt-1">Solo ves y editas calificaciones de estos cursos</p>
+        </div>
+      )}
 
       {/* Mensaje de éxito */}
       {successMessage && (
@@ -490,15 +557,17 @@ const GradeForm = () => {
                     <div className="flex gap-2 justify-end">
                       <button
                         onClick={() => handleEdit(grade)}
-                        disabled={submitting}
-                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium hover:bg-blue-200 transition-colors disabled:opacity-50"
+                        disabled={submitting || !canEditGrade(grade)}
+                        title={!canEditGrade(grade) ? 'No puedes editar calificaciones de otros docentes' : ''}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         ✏️ Editar
                       </button>
                       <button
                         onClick={() => handleDelete(grade.id)}
-                        disabled={submitting}
-                        className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm font-medium hover:bg-red-200 transition-colors disabled:opacity-50"
+                        disabled={submitting || !canEditGrade(grade)}
+                        title={!canEditGrade(grade) ? 'No puedes eliminar calificaciones de otros docentes' : ''}
+                        className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm font-medium hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         🗑️ Eliminar
                       </button>

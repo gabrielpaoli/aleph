@@ -1,11 +1,12 @@
 // components/admin/SubjectForm.jsx
 
 import React, { useState, useEffect } from 'react';
-import { subjectService, courseService } from '../../services/api';
+import { subjectService, courseService, userService } from '../../services/api';
 
 const SubjectForm = () => {
   const [subjects, setSubjects] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     courseId: ''
@@ -36,6 +37,15 @@ const SubjectForm = () => {
       const coursesData = await courseService.getAll();
       console.log('✅ Cursos cargados:', coursesData);
       setCourses(coursesData || []);
+
+      const teachersResponse = await userService.getTeachers();
+      const teachersData = Array.isArray(teachersResponse?.users)
+        ? teachersResponse.users
+        : Array.isArray(teachersResponse)
+          ? teachersResponse
+          : [];
+      console.log('✅ Docentes cargados:', teachersData);
+      setTeachers(teachersData);
       
       setErrorMessage('');
       setCurrentPage(0);
@@ -132,6 +142,18 @@ const SubjectForm = () => {
     return course ? `${course.name} - ${course.shift}` : 'N/A';
   };
 
+  const getTeacherNamesBySubject = (subjectId) => {
+    const assigned = teachers.filter(teacher =>
+      Array.isArray(teacher.subjectIds) && teacher.subjectIds.includes(subjectId)
+    );
+
+    if (assigned.length === 0) {
+      return 'Sin asignar';
+    }
+
+    return assigned.map(teacher => teacher.name || teacher.email).join(', ');
+  };
+
   return (
     <div>
       {/* Header */}
@@ -224,13 +246,14 @@ const SubjectForm = () => {
             <tr className="bg-slate-50 border-b border-slate-200">
               <th className="text-left p-4 font-semibold text-slate-700">📖 Materia</th>
               <th className="text-left p-4 font-semibold text-slate-700">📚 Curso</th>
+              <th className="text-left p-4 font-semibold text-slate-700">👨‍🏫 Docente</th>
               <th className="text-right p-4 font-semibold text-slate-700">⚙️ Acciones</th>
             </tr>
           </thead>
           <tbody>
             {subjects.length === 0 ? (
               <tr>
-                <td colSpan="3" className="text-center p-6 text-slate-500">
+                <td colSpan="4" className="text-center p-6 text-slate-500">
                   No hay materias disponibles
                 </td>
               </tr>
@@ -239,6 +262,7 @@ const SubjectForm = () => {
                 <tr key={subject.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
                   <td className="p-4">{subject.name}</td>
                   <td className="p-4">{subject.courseName || getCourseName(subject.courseId)}</td>
+                  <td className="p-4">{getTeacherNamesBySubject(subject.id)}</td>
                   <td className="p-4">
                     <div className="flex gap-2 justify-end">
                       <button

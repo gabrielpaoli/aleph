@@ -30,7 +30,11 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-96 border border-slate-200">
         <div className="text-center mb-6">
-          <div className="text-5xl mb-3">🎓</div>
+          <img
+            src="https://colegiodelprado.com/wp-content/uploads/2024/08/transparent-background-no-shadow-designify-1.png"
+            alt="Colegio del Prado"
+            className="h-20 w-auto mx-auto mb-3"
+          />
           <h2 className="text-3xl font-bold text-slate-800">Sistema Escolar</h2>
           <p className="text-slate-500 mt-2">Iniciar Sesión</p>
         </div>

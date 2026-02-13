@@ -9,10 +9,15 @@ const Navbar = () => {
 
   return (
     <nav className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-8">
-            <h1 className="text-2xl font-bold">🎓 Sistema Escolar</h1>
+          <div className="flex items-center gap-6">
+            <img
+              src="https://colegiodelprado.com/wp-content/uploads/2024/08/transparent-background-no-shadow-designify-1.png"
+              alt="Colegio del Prado"
+              className="h-14 w-auto"
+            />
+            <h1 className="text-2xl font-bold hidden sm:block">Sistema Escolar</h1>
 
             {user?.role === 'preceptor' && (
               <div className="flex gap-1">
@@ -55,6 +60,12 @@ const Navbar = () => {
                   className="px-4 py-2 rounded-lg hover:bg-white/20 transition-colors font-medium"
                 >
                   📋 Asistencias
+                </Link>
+                <Link
+                  to="/calificaciones"
+                  className="px-4 py-2 rounded-lg hover:bg-white/20 transition-colors font-medium"
+                >
+                  ⭐ Calificaciones
                 </Link>
               </div>
             )}

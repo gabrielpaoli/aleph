@@ -83,6 +83,11 @@ class GradeApiController extends ControllerBase {
       return new JsonResponse(['error' => 'Grade not found'], 404);
     }
 
+    // Check permission for docente
+    if (!$this->canEditGrade($node)) {
+      return new JsonResponse(['error' => 'No tienes permiso para editar esta calificación'], 403);
+    }
+
     $data = json_decode($request->getContent(), TRUE);
 
     if (!$data) {
@@ -116,6 +121,11 @@ class GradeApiController extends ControllerBase {
       return new JsonResponse(['error' => 'Grade not found'], 404);
     }
 
+    // Check permission for docente
+    if (!$this->canEditGrade($node)) {
+      return new JsonResponse(['error' => 'No tienes permiso para eliminar esta calificación'], 403);
+    }
+
     try {
       $node->delete();
       return new JsonResponse(['success' => TRUE]);
@@ -123,6 +133,41 @@ class GradeApiController extends ControllerBase {
     catch (\Exception $e) {
       return new JsonResponse(['error' => $e->getMessage()], 500);
     }
+  }
+
+  /**
+   * Check if user can edit a grade (must be admin or teacher of the subject).
+   */
+  private function canEditGrade($grade_node) {
+    $current_user = \Drupal::currentUser();
+
+    // Admin can edit all
+    if ($current_user->hasRole('administrator')) {
+      return TRUE;
+    }
+
+    // Check if user is docente with permission to edit
+    if (!$current_user->hasRole('docente')) {
+      return TRUE; // Other roles shouldn't be here but allow for now
+    }
+
+    // Get teacher's subjects
+    $user = \Drupal\user\Entity\User::load($current_user->id());
+    if (!$user || !$user->hasField('field_subjects_ref')) {
+      return FALSE;
+    }
+
+    $teacher_subject_ids = [];
+    $subjects = $user->get('field_subjects_ref')->referencedEntities();
+    foreach ($subjects as $subject) {
+      $teacher_subject_ids[] = (int) $subject->id();
+    }
+
+    // Get grade's subject
+    $grade_subject_id = $grade_node->get('field_subject_ref')->target_id;
+
+    // Teacher can only edit if subject matches
+    return in_array((int) $grade_subject_id, $teacher_subject_ids);
   }
 
   /**

@@ -10,6 +10,7 @@ import AbsenceNotification from './components/preceptor/AbsenceNotification';
 import StudentDashboard from './components/parent/StudentDashboard';
 import StudentProfile from './components/student/StudentProfile';
 import AdminPanel from './components/admin/AdminPanel';
+import TeacherGradeManagement from './components/teacher/TeacherGradeManagement';
 
 const PrivateRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
@@ -58,6 +59,7 @@ const AppRoutes = () => {
           <>
             <Route path="/" element={<Navigate to="/asistencias" />} />
             <Route path="/asistencias" element={<AttendanceTable />} />
+            <Route path="/calificaciones" element={<TeacherGradeManagement />} />
             <Route path="/estudiante/:studentId" element={<StudentProfile />} />
           </>
         )}

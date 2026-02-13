@@ -2,9 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { ATTENDANCE_STATUS } from '../../services/dummyData';
-import { studentService, courseService, attendanceService } from '../../services/api';
+import { studentService, courseService, attendanceService, subjectService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const AttendanceTable = () => {
+  const { user } = useAuth();
+  const isTeacher = user && user.role === 'docente';
+  
   const currentYear = 2026;
   const currentMonth = new Date().getMonth();
 
@@ -23,10 +27,10 @@ const AttendanceTable = () => {
 
   const [localChanges, setLocalChanges] = useState({});
 
-  // Cargar cursos al montar
+  // Cargar cursos al montar o cuando cambia el usuario
   useEffect(() => {
     loadCourses();
-  }, []);
+  }, [user, isTeacher]);
 
   // Cargar estadísticas anuales cuando los cursos se cargan o cambia el año
   useEffect(() => {
@@ -66,12 +70,37 @@ const AttendanceTable = () => {
       console.log('✅ Courses loaded:', coursesData.length);
       console.log('   Courses:', coursesData);
 
-      setCourses(coursesData);
+      // Si es docente, filtrar solo sus cursos (basado en sus materias)
+      let filteredCourses = coursesData;
+      if (isTeacher && user?.subjectIds?.length > 0) {
+        console.log('👨‍🏫 Teacher detected. Filtering courses...');
+        
+        // Cargar materias del docente
+        const allSubjects = await subjectService.getAll();
+        const teacherSubjects = allSubjects.filter(s =>
+          user.subjectIds.includes(s.id)
+        );
+        
+        // Obtener cursos únicos del docente
+        const teacherCourseIds = new Set();
+        teacherSubjects.forEach(subject => {
+          if (subject.courseId) {
+            teacherCourseIds.add(subject.courseId);
+          }
+        });
+        
+        filteredCourses = coursesData.filter(c =>
+          teacherCourseIds.has(c.id)
+        );
+        console.log('✅ Teacher courses filtered:', filteredCourses.length, 'de', coursesData.length);
+      }
+
+      setCourses(filteredCourses);
 
       // Seleccionar el primer curso por defecto
-      if (coursesData.length > 0 && !selectedCourse) {
-        setSelectedCourse(coursesData[0].id);
-        console.log('   Selected first course:', coursesData[0].id);
+      if (filteredCourses.length > 0 && !selectedCourse) {
+        setSelectedCourse(filteredCourses[0].id);
+        console.log('   Selected first course:', filteredCourses[0].id);
       }
 
       setError(null);
@@ -329,6 +358,14 @@ const AttendanceTable = () => {
     <div className="p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
       <div className="max-w-full mx-auto">
         <h2 className="text-3xl font-bold mb-6 text-slate-800">📋 Control de Asistencias</h2>
+
+        {/* Alerta para docentes */}
+        {isTeacher && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-300 rounded-lg text-blue-800">
+            <p className="font-semibold">👨‍🏫 Modo Docente: Solo ves los cursos donde enseñas</p>
+            <p className="text-sm mt-1">Estás viendo {courses.length} de {courses.length} curso(s) asignado(s)</p>
+          </div>
+        )}
 
         {/* Filtros */}
         <div className="mb-6 flex gap-4 items-center flex-wrap bg-white p-4 rounded-xl shadow-sm">

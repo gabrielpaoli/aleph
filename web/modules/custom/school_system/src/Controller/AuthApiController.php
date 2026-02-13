@@ -94,6 +94,15 @@ class AuthApiController extends ControllerBase {
       }
     }
 
+    // Obtener materias si es docente
+    $subject_ids = [];
+    if ($role === 'docente' && $user->hasField('field_subjects_ref')) {
+      $subjects = $user->get('field_subjects_ref')->referencedEntities();
+      foreach ($subjects as $subject) {
+        $subject_ids[] = (int) $subject->id();
+      }
+    }
+
     // Obtener el session ID como token
     $session_id = \Drupal::service('session')->getId();
 
@@ -106,6 +115,7 @@ class AuthApiController extends ControllerBase {
         'role' => $role,
         'studentId' => $student_id,
         'studentIds' => $student_ids,
+        'subjectIds' => $subject_ids,
         'schoolId' => 1,
       ],
     ]);
@@ -166,12 +176,22 @@ class AuthApiController extends ControllerBase {
       }
     }
 
+    // Obtener materias si es docente
+    $subject_ids = [];
+    if ($role === 'docente' && $user->hasField('field_subjects_ref')) {
+      $subjects = $user->get('field_subjects_ref')->referencedEntities();
+      foreach ($subjects as $subject) {
+        $subject_ids[] = (int) $subject->id();
+      }
+    }
+
     return new JsonResponse([
       'id' => (int) $user->id(),
       'email' => $user->getEmail(),
       'role' => $role,
       'studentId' => $student_id,
       'studentIds' => $student_ids,
+      'subjectIds' => $subject_ids,
       'schoolId' => 1,
     ]);
   }
