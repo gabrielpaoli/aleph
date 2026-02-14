@@ -9,18 +9,18 @@ const Navbar = () => {
 
   return (
     <nav className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-6">
+      <div className="container mx-auto px-4 py-2 sm:py-3">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
             <img
               src="https://colegiodelprado.com/wp-content/uploads/2024/08/transparent-background-no-shadow-designify-1.png"
               alt="Colegio del Prado"
-              className="h-14 w-auto"
+              className="h-10 sm:h-12 lg:h-14 w-auto shrink-0"
             />
             <h1 className="text-2xl font-bold hidden sm:block">Sistema Escolar</h1>
 
             {user?.role === 'preceptor' && (
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1 sm:gap-2 text-sm sm:text-base">
                 <Link
                   to="/asistencias"
                   className="px-4 py-2 rounded-lg hover:bg-white/20 transition-colors font-medium"
@@ -43,7 +43,7 @@ const Navbar = () => {
             )}
 
             {user?.role === 'directivo' && (
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1 sm:gap-2 text-sm sm:text-base">
                 <Link
                   to="/admin"
                   className="px-4 py-2 rounded-lg hover:bg-white/20 transition-colors font-medium"
@@ -54,7 +54,7 @@ const Navbar = () => {
             )}
 
             {user?.role === 'docente' && (
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1 sm:gap-2 text-sm sm:text-base">
                 <Link
                   to="/asistencias"
                   className="px-4 py-2 rounded-lg hover:bg-white/20 transition-colors font-medium"
@@ -71,8 +71,8 @@ const Navbar = () => {
             )}
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-right">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 lg:justify-end">
+            <div className="text-left sm:text-right">
               <div className="text-sm font-medium">{user?.email}</div>
               <div className="text-xs text-indigo-200 capitalize">
                 {user?.role === 'preceptor' ? '👨‍🏫 Preceptor' : 

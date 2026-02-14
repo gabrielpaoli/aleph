@@ -16,6 +16,7 @@ const AttendanceTable = () => {
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [hasChanges, setHasChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState('monthly');
 
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -355,9 +356,9 @@ const AttendanceTable = () => {
   }
 
   return (
-    <div className="p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+    <div className="p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
       <div className="max-w-full mx-auto">
-        <h2 className="text-3xl font-bold mb-6 text-slate-800">📋 Control de Asistencias</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-slate-800">📋 Control de Asistencias</h2>
 
         {/* Alerta para docentes */}
         {isTeacher && (
@@ -368,13 +369,13 @@ const AttendanceTable = () => {
         )}
 
         {/* Filtros */}
-        <div className="mb-6 flex gap-4 items-center flex-wrap bg-white p-4 rounded-xl shadow-sm">
+        <div className="mb-6 flex flex-col lg:flex-row lg:items-end gap-4 bg-white p-4 rounded-xl shadow-sm">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Curso:</label>
             <select
               value={selectedCourse || ''}
               onChange={(e) => handleCourseChange(e.target.value)}
-              className="border-2 border-slate-200 p-2 rounded-lg focus:border-indigo-500 focus:outline-none min-w-[200px]"
+              className="border-2 border-slate-200 p-2 rounded-lg focus:border-indigo-500 focus:outline-none w-full sm:min-w-[200px]"
             >
               {courses.map(course => (
                 <option key={course.id} value={course.id}>
@@ -389,7 +390,7 @@ const AttendanceTable = () => {
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              className="border-2 border-slate-200 p-2 rounded-lg focus:border-indigo-500 focus:outline-none min-w-[150px]"
+              className="border-2 border-slate-200 p-2 rounded-lg focus:border-indigo-500 focus:outline-none w-full sm:min-w-[150px]"
             >
               {Array.from({ length: 12 }, (_, i) => (
                 <option key={i} value={i}>
@@ -404,7 +405,7 @@ const AttendanceTable = () => {
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="border-2 border-slate-200 p-2 rounded-lg focus:border-indigo-500 focus:outline-none"
+              className="border-2 border-slate-200 p-2 rounded-lg focus:border-indigo-500 focus:outline-none w-full sm:w-auto"
             >
               {[2026, 2027, 2028].map(year => (
                 <option key={year} value={year}>{year}</option>
@@ -413,7 +414,7 @@ const AttendanceTable = () => {
           </div>
 
           {hasChanges && (
-            <div className="flex gap-2 ml-auto">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:ml-auto">
               <button
                 onClick={handleSave}
                 className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-2 rounded-lg hover:from-emerald-600 hover:to-teal-600 transition-all font-semibold shadow-md"
@@ -430,8 +431,31 @@ const AttendanceTable = () => {
           )}
         </div>
 
-        {/* Resumen anual por curso */}
-        {courses.length > 0 && (
+        {/* Tabs */}
+        <div className="mb-6 bg-white p-2 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-2">
+          <button
+            onClick={() => setActiveTab('monthly')}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+              activeTab === 'monthly'
+                ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            📅 Control Mensual
+          </button>
+          <button
+            onClick={() => setActiveTab('annual')}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+              activeTab === 'annual'
+                ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            📊 Resumen Anual
+          </button>
+        </div>
+
+        {activeTab === 'annual' && courses.length > 0 && (
           <div className="mb-6 p-4 bg-white rounded-xl shadow-sm border-l-4 border-indigo-500">
             <h3 className="font-semibold text-slate-800 mb-4">📊 Resumen Anual {selectedYear} - Por Curso</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -461,15 +485,15 @@ const AttendanceTable = () => {
           </div>
         )}
 
-        {students.length === 0 ? (
+        {activeTab === 'monthly' && (students.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
             <p className="text-slate-500 text-lg">
               No hay estudiantes en este curso
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto shadow-lg rounded-xl bg-white">
-            <table className="min-w-full border-collapse">
+          <div className="overflow-x-auto shadow-lg rounded-xl bg-white -mx-4 sm:mx-0">
+            <table className="min-w-[1200px] w-full border-collapse">
               <thead className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
               <tr>
                 <th className="border p-3 sticky left-0 bg-indigo-600 z-10 min-w-[180px]">
@@ -542,7 +566,7 @@ const AttendanceTable = () => {
               </tbody>
             </table>
           </div>
-        )}
+        ))}
 
         {/* Leyenda */}
         <div className="mt-6 p-4 bg-white rounded-xl shadow-sm">

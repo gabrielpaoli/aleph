@@ -35,9 +35,11 @@ const GradeForm = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [gradesPage, setGradesPage] = useState(1);
+  const [gradesPages, setGradesPages] = useState(1);
+  const [gradesTotal, setGradesTotal] = useState(0);
 
-  const ITEMS_PER_PAGE = 10;
+  const GRADES_LIMIT = 50;
   
   // Determinar si el usuario es docente
   const isTeacher = user && user.role === 'docente';
@@ -47,11 +49,11 @@ const GradeForm = () => {
     loadAllData();
   }, [user, isTeacher]);
 
-  // Aplicar filtros cuando cambian las calificaciones
+  // Recargar calificaciones cuando cambian los filtros
   useEffect(() => {
-    applyFilters();
-    setCurrentPage(0); // Resetear a primera página
-  }, [grades, filters]);
+    setGradesPage(1);
+    loadGrades(1, filters);
+  }, [filters]);
 
   // Debounce para la búsqueda de estudiantes
   useEffect(() => {
@@ -81,18 +83,13 @@ const GradeForm = () => {
     setFilteredStudentList(filtered.slice(0, 10)); // Máximo 10 sugerencias
     // Solo mostrar dropdown si hay resultados
     setShowStudentDropdown(filtered.length > 0);
-  }, [studentSearchDebounced, students])
+  }, [studentSearchDebounced, students]);
 
   const loadAllData = async () => {
     try {
       setLoading(true);
       console.log('📥 Cargando datos del backend...');
       console.log('👤 Usuario actual:', user);
-      
-      // Cargar calificaciones
-      const gradesData = await gradeService.getAll();
-      console.log('✅ Calificaciones cargadas:', gradesData);
-      setGrades(gradesData || []);
       
       // Cargar estudiantes de Drupal (NO de dummy)
       console.log('📥 Cargando estudiantes de Drupal...');
@@ -130,11 +127,12 @@ const GradeForm = () => {
         console.log('✅ Cursos del docente:', teacherCoursesList);
         setTeacherCourses(teacherCourseIds);
       } else {
-        // Admin ve todas las materias
         setSubjects(subjectsData || []);
         setTeacherCourses([]);
       }
-      
+
+      await loadGrades(1, filters);
+      setGradesPage(1);
       setErrorMessage('');
     } catch (error) {
       console.error('❌ Error cargando datos:', error);
@@ -144,26 +142,33 @@ const GradeForm = () => {
     }
   };
 
-  const applyFilters = () => {
-    let filtered = grades;
-    
-    // Si es docente, filtrar solo sus calificaciones (de sus materias)
-    if (isTeacher && subjects.length > 0) {
-      const teacherSubjectIds = subjects.map(s => s.id);
-      filtered = filtered.filter(g => teacherSubjectIds.includes(g.subjectId));
-      console.log('📊 Calificaciones filtradas para docente:', filtered.length, 'de', grades.length);
+  const loadGrades = async (page = gradesPage, activeFilters = filters) => {
+    const gradeFilters = { ...activeFilters };
+
+    if (isTeacher && user?.subjectIds?.length > 0) {
+      gradeFilters.subjectIds = user.subjectIds.join(',');
     }
-    
-    if (filters.studentId) {
-      filtered = filtered.filter(g => g.studentId === Number(filters.studentId));
+
+    const gradesData = await gradeService.getAll(page, GRADES_LIMIT, gradeFilters);
+    const gradeItems = Array.isArray(gradesData) ? gradesData : (gradesData?.items || []);
+
+    setGrades(gradeItems);
+    setFilteredGrades(gradeItems);
+
+    if (!Array.isArray(gradesData)) {
+      setGradesTotal(gradesData.total ?? gradeItems.length);
+      setGradesPages(gradesData.pages ?? 1);
+    } else {
+      setGradesTotal(gradeItems.length);
+      setGradesPages(1);
     }
-    
-    if (filters.subjectId) {
-      filtered = filtered.filter(g => g.subjectId === Number(filters.subjectId));
-    }
-    
-    setFilteredGrades(filtered);
   };
+
+  useEffect(() => {
+    if (!loading) {
+      loadGrades(gradesPage, filters);
+    }
+  }, [gradesPage]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -188,20 +193,15 @@ const GradeForm = () => {
         await gradeService.update(editingId, formData);
         console.log('✅ Calificación actualizada');
         setSuccessMessage('✅ Calificación actualizada correctamente');
-        
-        // Actualizar en el estado local
-        setGrades(grades.map(g =>
-          g.id === editingId 
-            ? { ...g, ...formData } 
-            : g
-        ));
+
+        await loadGrades(gradesPage, filters);
         setEditingId(null);
       } else {
         // Crear nueva calificación
         console.log('➕ Creando nueva calificación:', formData);
-        const newGrade = await gradeService.create(formData);
-        console.log('✅ Calificación creada:', newGrade);
-        setGrades([...grades, newGrade]);
+        await gradeService.create(formData);
+        console.log('✅ Calificación creada');
+        await loadGrades(gradesPage, filters);
         setSuccessMessage('✅ Calificación agregada correctamente');
       }
 
@@ -241,8 +241,8 @@ const GradeForm = () => {
       console.log('🗑️ Eliminando calificación:', id);
       await gradeService.delete(id);
       console.log('✅ Calificación eliminada');
-      
-      setGrades(grades.filter(g => g.id !== id));
+
+      await loadGrades(gradesPage, filters);
       setSuccessMessage('✅ Calificación eliminada');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
@@ -348,7 +348,7 @@ const GradeForm = () => {
       )}
 
       {/* Formulario */}
-      <form onSubmit={handleSubmit} className="mb-8 bg-slate-50 p-6 rounded-xl border border-slate-200">
+      <form onSubmit={handleSubmit} className="mb-8 bg-slate-50 p-4 sm:p-6 rounded-xl border border-slate-200">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           {/* Estudiante */}
           <div className="relative">
@@ -476,7 +476,7 @@ const GradeForm = () => {
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             type="submit"
             disabled={submitting}
@@ -531,7 +531,8 @@ const GradeForm = () => {
 
       {/* Tabla de calificaciones */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+          <table className="min-w-[860px] w-full">
           <thead className="bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
             <tr>
               <th className="text-left p-4 font-semibold text-slate-700">Estudiante</th>
@@ -543,7 +544,7 @@ const GradeForm = () => {
           </thead>
           <tbody>
             {filteredGrades.length > 0 ? (
-              filteredGrades.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map((grade, index) => (
+              filteredGrades.map((grade, index) => (
                 <tr key={grade.id} className={`border-b border-slate-200 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-indigo-50 transition-colors`}>
                   <td className="p-4 text-slate-800">{getStudentName(grade.studentId)}</td>
                   <td className="p-4 text-slate-800">{getSubjectName(grade.subjectId)}</td>
@@ -554,7 +555,7 @@ const GradeForm = () => {
                     {new Date(grade.date).toLocaleDateString('es')}
                   </td>
                   <td className="p-4">
-                    <div className="flex gap-2 justify-end">
+                    <div className="flex flex-col sm:flex-row gap-2 justify-end">
                       <button
                         onClick={() => handleEdit(grade)}
                         disabled={submitting || !canEditGrade(grade)}
@@ -583,24 +584,25 @@ const GradeForm = () => {
               </tr>
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
 
         {/* Paginación */}
-        {filteredGrades.length > ITEMS_PER_PAGE && (
-          <div className="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50">
+        {gradesPages > 1 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50">
             <button
-              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-              disabled={currentPage === 0}
+              onClick={() => setGradesPage(Math.max(1, gradesPage - 1))}
+              disabled={gradesPage === 1}
               className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               ← Anterior
             </button>
             <span className="text-sm font-semibold text-slate-600">
-              Página {currentPage + 1} de {Math.ceil(filteredGrades.length / ITEMS_PER_PAGE)}
+              Página {gradesPage} de {gradesPages}
             </span>
             <button
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage >= Math.ceil(filteredGrades.length / ITEMS_PER_PAGE) - 1}
+              onClick={() => setGradesPage(Math.min(gradesPages, gradesPage + 1))}
+              disabled={gradesPage >= gradesPages}
               className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Siguiente →
@@ -611,7 +613,7 @@ const GradeForm = () => {
 
       {/* Resumen */}
       <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800">
-        <p className="font-semibold">📊 Total de calificaciones: {grades.length}</p>
+        <p className="font-semibold">📊 Total de calificaciones: {gradesTotal}</p>
         <p className="text-sm mt-1">🔄 Sincronizadas con Drupal en tiempo real</p>
       </div>
     </div>

@@ -151,11 +151,11 @@ Equipo de Preceptoría`;
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
-      <h2 className="text-3xl font-bold mb-6 text-slate-800">📧 Notificar Ausencias</h2>
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+      <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-slate-800">📧 Notificar Ausencias</h2>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-        <div className="grid grid-cols-2 gap-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block mb-2 font-semibold text-slate-700">📅 Fecha:</label>
             <input
@@ -183,8 +183,8 @@ Equipo de Preceptoría`;
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-bold text-xl text-slate-800">
               👥 Estudiantes Ausentes ({absentStudents.length})
@@ -209,7 +209,8 @@ Equipo de Preceptoría`;
           ) : (
             <>
               <div className="max-h-96 overflow-y-auto mb-4 border rounded-lg">
-                <table className="w-full">
+                <div className="overflow-x-auto">
+                  <table className="min-w-[520px] w-full">
                   <thead className="bg-slate-100 sticky top-0">
                   <tr>
                     <th className="text-left p-3 w-12"></th>
@@ -246,7 +247,8 @@ Equipo de Preceptoría`;
                     </tr>
                   ))}
                   </tbody>
-                </table>
+                  </table>
+                </div>
               </div>
 
               <button
@@ -263,7 +265,7 @@ Equipo de Preceptoría`;
           )}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
           <h3 className="font-bold text-xl mb-4 text-slate-800">📄 Vista Previa del Email</h3>
           <div className="bg-slate-50 p-6 rounded-lg border-2 border-slate-200">
             <div className="mb-4 pb-4 border-b border-slate-300">

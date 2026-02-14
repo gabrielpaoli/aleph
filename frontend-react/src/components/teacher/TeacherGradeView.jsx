@@ -13,26 +13,26 @@ const TeacherGradeView = () => {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [currentPage, setCurrentPage] = useState(0);
+  const [gradesPage, setGradesPage] = useState(1);
+  const [gradesPages, setGradesPages] = useState(1);
+  const [gradesTotal, setGradesTotal] = useState(0);
 
-  const ITEMS_PER_PAGE = 10;
+  const GRADES_LIMIT = 50;
 
   useEffect(() => {
     loadData();
   }, [user]);
 
   useEffect(() => {
-    applyFilters();
-  }, [grades, subjects]);
+    if (!loading) {
+      loadGrades(gradesPage);
+    }
+  }, [gradesPage]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       console.log('📥 Cargando datos para docente...');
-
-      // Cargar todas las calificaciones
-      const gradesData = await gradeService.getAll();
-      setGrades(gradesData || []);
 
       // Cargar estudiantes
       const studentsData = await studentService.getAll();
@@ -48,6 +48,9 @@ const TeacherGradeView = () => {
         setSubjects(teacherSubjects);
       }
 
+      await loadGrades(1);
+      setGradesPage(1);
+
       setError('');
     } catch (err) {
       console.error('❌ Error cargando datos:', err);
@@ -57,15 +60,25 @@ const TeacherGradeView = () => {
     }
   };
 
-  const applyFilters = () => {
-    // Filtrar solo calificaciones de sus materias
-    const teacherSubjectIds = subjects.map(s => s.id);
-    const filtered = grades.filter(g =>
-      teacherSubjectIds.includes(g.subjectId)
-    );
-    console.log('📊 Calificaciones filtradas:', filtered.length, 'de', grades.length);
-    setFilteredGrades(filtered);
-    setCurrentPage(0);
+  const loadGrades = async (page = gradesPage) => {
+    const gradeFilters = {};
+    if (user?.subjectIds?.length > 0) {
+      gradeFilters.subjectIds = user.subjectIds.join(',');
+    }
+
+    const gradesData = await gradeService.getAll(page, GRADES_LIMIT, gradeFilters);
+    const gradeItems = Array.isArray(gradesData) ? gradesData : (gradesData?.items || []);
+
+    setGrades(gradeItems);
+    setFilteredGrades(gradeItems);
+
+    if (!Array.isArray(gradesData)) {
+      setGradesTotal(gradesData.total ?? gradeItems.length);
+      setGradesPages(gradesData.pages ?? 1);
+    } else {
+      setGradesTotal(gradeItems.length);
+      setGradesPages(1);
+    }
   };
 
   const getStudentName = (studentId) => {
@@ -97,11 +110,11 @@ const TeacherGradeView = () => {
   }
 
   return (
-    <div className="p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+    <div className="p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-slate-800 mb-2">📝 Calificaciones Registradas</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">📝 Calificaciones Registradas</h2>
           <p className="text-slate-600">Visualización de todas las calificaciones de tus estudiantes</p>
         </div>
 
@@ -115,13 +128,14 @@ const TeacherGradeView = () => {
         {subjects.length > 0 && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-300 rounded-lg text-blue-800">
             <p className="font-semibold">📚 Tus Materias: {subjects.map(s => s.name).join(', ')}</p>
-            <p className="text-sm mt-1">Mostrando {filteredGrades.length} calificaciones</p>
+            <p className="text-sm mt-1">Mostrando {gradesTotal} calificaciones</p>
           </div>
         )}
 
         {/* Tabla de calificaciones */}
         <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="min-w-[760px] w-full">
             <thead className="bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
               <tr>
                 <th className="text-left p-4 font-semibold text-slate-700">Estudiante</th>
@@ -132,7 +146,7 @@ const TeacherGradeView = () => {
             </thead>
             <tbody>
               {filteredGrades.length > 0 ? (
-                filteredGrades.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map((grade, index) => (
+                filteredGrades.map((grade, index) => (
                   <tr
                     key={grade.id}
                     className={`border-b border-slate-200 ${
@@ -161,24 +175,25 @@ const TeacherGradeView = () => {
                 </tr>
               )}
             </tbody>
-          </table>
+            </table>
+          </div>
 
           {/* Paginación */}
-          {filteredGrades.length > ITEMS_PER_PAGE && (
-            <div className="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50">
+          {gradesPages > 1 && (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50">
               <button
-                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                disabled={currentPage === 0}
+                onClick={() => setGradesPage(Math.max(1, gradesPage - 1))}
+                disabled={gradesPage === 1}
                 className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ← Anterior
               </button>
               <span className="text-sm font-semibold text-slate-600">
-                Página {currentPage + 1} de {Math.ceil(filteredGrades.length / ITEMS_PER_PAGE)}
+                Página {gradesPage} de {gradesPages}
               </span>
               <button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage >= Math.ceil(filteredGrades.length / ITEMS_PER_PAGE) - 1}
+                onClick={() => setGradesPage(Math.min(gradesPages, gradesPage + 1))}
+                disabled={gradesPage >= gradesPages}
                 className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Siguiente →
@@ -189,7 +204,7 @@ const TeacherGradeView = () => {
 
         {/* Resumen */}
         <div className="mt-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-800">
-          <p className="font-semibold">📊 Total de calificaciones: {filteredGrades.length}</p>
+          <p className="font-semibold">📊 Total de calificaciones: {gradesTotal}</p>
           <p className="text-sm mt-1">🔄 Sincronizadas con el sistema en tiempo real</p>
         </div>
       </div>

@@ -92,7 +92,7 @@ const NoteForm = () => {
   };
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl w-full">
       <h3 className="text-2xl font-bold mb-6 text-slate-800">📝 Enviar Nota a Estudiantes</h3>
 
       {message && (
@@ -111,7 +111,7 @@ const NoteForm = () => {
         {/* Type Selection */}
         <div>
           <label className="block text-sm font-bold text-slate-700 mb-3">Tipo de Nota</label>
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="radio"

@@ -254,7 +254,7 @@ const UserManagement = () => {
 
       {/* Lista de usuarios por rol */}
       <div>
-        <div className="mb-4 flex gap-2">
+        <div className="mb-4 flex flex-wrap gap-2">
           {ROLES.map((role) => (
             <button
               key={role}
@@ -279,7 +279,7 @@ const UserManagement = () => {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="min-w-[640px] w-full">
                 <thead>
                   <tr className="border-b border-slate-200">
                     <th className="text-left px-4 py-3 font-semibold text-slate-700">Email</th>
@@ -298,19 +298,21 @@ const UserManagement = () => {
                           {u.roles ? u.roles.join(', ') : selectedRole}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center space-x-2">
-                        <button
-                          onClick={() => startEdit(u)}
-                          className="px-4 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium text-sm"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(u.id)}
-                          className="px-4 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium text-sm"
-                        >
-                          Eliminar
-                        </button>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex flex-col sm:flex-row sm:justify-center gap-2">
+                          <button
+                            onClick={() => startEdit(u)}
+                            className="px-4 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium text-sm"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(u.id)}
+                            className="px-4 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium text-sm"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

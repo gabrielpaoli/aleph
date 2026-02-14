@@ -54,7 +54,7 @@ const TeacherForm = () => {
   return (
     <div>
       <form onSubmit={handleSubmit} className="mb-6 space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <input
             type="text"
             placeholder="Nombre"
@@ -83,7 +83,7 @@ const TeacherForm = () => {
 
         <div className="border p-4 rounded">
           <p className="font-semibold mb-2">Materias que dicta:</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {dummyData.subjects.map(subject => {
               const course = dummyData.courses.find(c => c.id === subject.courseId);
               return (
@@ -110,7 +110,8 @@ const TeacherForm = () => {
         </button>
       </form>
 
-      <table className="w-full">
+      <div className="overflow-x-auto">
+        <table className="min-w-[760px] w-full">
         <thead>
         <tr className="border-b">
           <th className="text-left p-2">Nombre</th>
@@ -149,7 +150,8 @@ const TeacherForm = () => {
           </tr>
         ))}
         </tbody>
-      </table>
+        </table>
+      </div>
 
       {/* Paginación */}
       {teachers.length > ITEMS_PER_PAGE && (

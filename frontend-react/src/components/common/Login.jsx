@@ -18,24 +18,24 @@ const Login = () => {
     }
   };
 
-  const quickLogin = (userEmail) => {
+  const quickLogin = (userEmail, userPassword = 'password') => {
     setEmail(userEmail);
-    const result = login(userEmail, 'password');
+    const result = login(userEmail, userPassword);
     if (!result.success) {
       setError(result.error);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-96 border border-slate-200">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 px-4 py-6">
+      <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200">
         <div className="text-center mb-6">
           <img
             src="https://colegiodelprado.com/wp-content/uploads/2024/08/transparent-background-no-shadow-designify-1.png"
             alt="Colegio del Prado"
-            className="h-20 w-auto mx-auto mb-3"
+            className="h-16 sm:h-20 w-auto mx-auto mb-3"
           />
-          <h2 className="text-3xl font-bold text-slate-800">Sistema Escolar</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">Sistema Escolar</h2>
           <p className="text-slate-500 mt-2">Iniciar Sesión</p>
         </div>
 
@@ -83,7 +83,7 @@ const Login = () => {
 
           <div className="space-y-2">
             <button
-              onClick={() => quickLogin('preceptor@escuela1.com')}
+              onClick={() => quickLogin('preceptor@escuela1.com', '1234')}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2.5 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all text-sm font-medium shadow-sm"
             >
               👨‍🏫 Entrar como Preceptor

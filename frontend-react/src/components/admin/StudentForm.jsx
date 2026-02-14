@@ -166,7 +166,7 @@ const StudentForm = () => {
       )}
 
       {/* Formulario de creación/edición */}
-      <form onSubmit={handleSubmit} className="mb-6 bg-slate-50 p-6 rounded-xl border border-slate-200">
+      <form onSubmit={handleSubmit} className="mb-6 bg-slate-50 p-4 sm:p-6 rounded-xl border border-slate-200">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <input
             type="text"
@@ -211,7 +211,7 @@ const StudentForm = () => {
           </select>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             type="submit"
             disabled={loading}
@@ -234,7 +234,7 @@ const StudentForm = () => {
       </form>
 
       {/* Buscador y filtros */}
-      <div className="mb-6 bg-white p-6 rounded-xl border border-slate-200">
+      <div className="mb-6 bg-white p-4 sm:p-6 rounded-xl border border-slate-200">
         <h3 className="text-lg font-semibold text-slate-800 mb-4">🔍 Buscar Estudiantes</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -282,7 +282,7 @@ const StudentForm = () => {
       {/* Tabla de estudiantes */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="min-w-[820px] w-full">
             <thead>
             <tr className="border-b-2 border-slate-200 bg-slate-50">
               <th className="text-left p-4 font-semibold text-slate-700">👤 Nombre</th>
@@ -324,7 +324,7 @@ const StudentForm = () => {
                       )}
                     </td>
                     <td className="p-4">
-                      <div className="flex gap-2 justify-end">
+                      <div className="flex flex-col sm:flex-row gap-2 justify-end">
                         <Link
                           to={`/estudiante/${student.id}`}
                           className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded text-sm font-medium hover:bg-emerald-200 transition-colors"
@@ -357,7 +357,7 @@ const StudentForm = () => {
 
         {/* Paginación */}
         {filteredStudents.length > ITEMS_PER_PAGE && (
-          <div className="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50">
             <button
               onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
               disabled={currentPage === 0}

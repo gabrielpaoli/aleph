@@ -23,6 +23,12 @@ function school_system_install() {
   // Crear roles
   _school_system_create_roles();
 
+  // Asignar permisos a roles
+  _school_system_assign_permissions();
+
+  // Crear campo de materias para usuarios
+  _school_system_create_user_subjects_field();
+
   \Drupal::messenger()->addStatus(t('School System module installed successfully.'));
 }
 
@@ -67,6 +73,7 @@ function _school_system_create_content_types() {
         'type' => $type_id,
         'name' => $type_info['name'],
         'description' => $type_info['description'],
+        'new_revision' => FALSE,
       ]);
       $node_type->save();
     }
@@ -243,10 +250,24 @@ function _school_system_create_roles() {
  * Implements hook_uninstall().
  */
 function school_system_uninstall() {
-  // Eliminar content types y campos
-  $types = ['course', 'subject', 'student', 'teacher', 'attendance', 'grade', 'note'];
+  // Eliminar content types en orden inverso de dependencias
+  // Primero los que tienen referencias, luego los referenciados
+  $types = ['attendance', 'grade', 'note', 'teacher', 'student', 'subject', 'course'];
 
   foreach ($types as $type) {
+    // Eliminar todos los nodos de este tipo primero
+    $storage = \Drupal::entityTypeManager()->getStorage('node');
+    $query = \Drupal::entityQuery('node')
+      ->condition('type', $type)
+      ->accessCheck(FALSE);
+    $nids = $query->execute();
+    
+    if (!empty($nids)) {
+      $nodes = $storage->loadMultiple($nids);
+      $storage->delete($nodes);
+    }
+
+    // Luego eliminar el content type
     $node_type = NodeType::load($type);
     if ($node_type) {
       $node_type->delete();
@@ -257,24 +278,29 @@ function school_system_uninstall() {
 }
 
 /**
- * Update hook: Assign permissions to new roles (directivo, docente).
+ * Helper: Asignar permisos a roles.
  */
-function school_system_update_1002() {
-  _school_system_assign_role_permissions();
-  return 'Permissions have been assigned to directivo and docente roles.';
-}
+function _school_system_assign_permissions() {
+  $preceptor_permissions = [
+    'access content',
+    'bypass node access',
+    'create attendance content',
+    'edit any attendance content',
+    'delete any attendance content',
+    'create grade content',
+    'edit any grade content',
+    'delete any grade content',
+    'create note content',
+    'edit any note content',
+    'delete any note content',
+  ];
 
-/**
- * Helper: Assign permissions to roles.
- */
-function _school_system_assign_role_permissions() {
   $docente_permissions = [
     'access content',
     'access content overview',
     'bypass node access',
     'create grade content',
     'edit any grade content',
-    'view any grade content',
     'create attendance content',
     'edit any attendance content',
   ];
@@ -285,18 +311,22 @@ function _school_system_assign_role_permissions() {
     'access administration pages',
     'bypass node access',
     'administer users',
-    'create preceptor users',
-    'create docente users',
-    'manage school users',
   ];
+
+  // Assign permissions to preceptor role
+  $preceptor_role = \Drupal\user\Entity\Role::load('preceptor');
+  if ($preceptor_role) {
+    foreach ($preceptor_permissions as $permission) {
+      $preceptor_role->grantPermission($permission);
+    }
+    $preceptor_role->save();
+  }
 
   // Assign permissions to docente role
   $docente_role = \Drupal\user\Entity\Role::load('docente');
   if ($docente_role) {
     foreach ($docente_permissions as $permission) {
-      if (\Drupal::service('user.permissions')->moduleExists()) {
-        $docente_role->grantPermission($permission);
-      }
+      $docente_role->grantPermission($permission);
     }
     $docente_role->save();
   }
@@ -305,19 +335,16 @@ function _school_system_assign_role_permissions() {
   $directivo_role = \Drupal\user\Entity\Role::load('directivo');
   if ($directivo_role) {
     foreach ($directivo_permissions as $permission) {
-      if (\Drupal::service('user.permissions')->moduleExists()) {
-        $directivo_role->grantPermission($permission);
-      }
+      $directivo_role->grantPermission($permission);
     }
     $directivo_role->save();
   }
 }
 
 /**
- * Update hook: Add subjects field to users for docente role.
+ * Helper: Crear campo de materias para usuarios.
  */
-function school_system_update_1003() {
-  // Crear campo de materias para usuarios
+function _school_system_create_user_subjects_field() {
   $field_storage = \Drupal\field\Entity\FieldStorageConfig::loadByName('user', 'field_subjects_ref');
   if (!$field_storage) {
     $field_storage = \Drupal\field\Entity\FieldStorageConfig::create([
@@ -348,6 +375,4 @@ function school_system_update_1003() {
     ]);
     $field->save();
   }
-
-  return 'Campo de materias agregado a usuarios.';
 }

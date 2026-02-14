@@ -50,13 +50,13 @@ const NotesList = ({ studentId }) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-bold text-slate-800 mb-4">📬 Notas Recibidas</h3>
+      <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4">📬 Notas Recibidas</h3>
       {notes.map(note => (
         <div
           key={note.id}
           className="bg-white border-l-4 border-indigo-500 rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow"
         >
-          <div className="flex justify-between items-start mb-2">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
             <h4 className="font-bold text-slate-800 text-lg">{note.title}</h4>
             <span className="text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded">
               {new Date(note.date || note.created).toLocaleDateString('es-AR')}

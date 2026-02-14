@@ -27,13 +27,28 @@ class GradeApiController extends ControllerBase {
     }
 
     $subject_id = $request->query->get('subjectId');
-    if ($subject_id) {
+    $subject_ids_param = $request->query->get('subjectIds');
+    if ($subject_ids_param) {
+      $subject_ids = array_filter(array_map('intval', explode(',', $subject_ids_param)));
+      if (!empty($subject_ids)) {
+        $query->condition('field_subject_ref', $subject_ids, 'IN');
+      }
+    } elseif ($subject_id) {
       $query->condition('field_subject_ref', $subject_id);
     }
 
-    $nids = $query->execute();
-    $grades = [];
+    $page = max(1, (int) $request->query->get('page', 1));
+    $limit = max(1, (int) $request->query->get('limit', 20));
+    $offset = ($page - 1) * $limit;
 
+    $count_query = clone $query;
+    $total = (int) $count_query->count()->execute();
+
+    $nids = $query
+      ->range($offset, $limit)
+      ->execute();
+
+    $grades = [];
     foreach ($nids as $nid) {
       $node = Node::load($nid);
       if ($node) {
@@ -41,7 +56,13 @@ class GradeApiController extends ControllerBase {
       }
     }
 
-    return new JsonResponse($grades);
+    return new JsonResponse([
+      'items' => $grades,
+      'total' => $total,
+      'page' => $page,
+      'limit' => $limit,
+      'pages' => $limit > 0 ? (int) ceil($total / $limit) : 0,
+    ]);
   }
 
   /**

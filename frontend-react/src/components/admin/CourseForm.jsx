@@ -144,7 +144,7 @@ const CourseForm = () => {
       )}
 
       {/* Formulario */}
-      <form onSubmit={handleSubmit} className="mb-8 bg-slate-50 p-6 rounded-xl border border-slate-200">
+      <form onSubmit={handleSubmit} className="mb-8 bg-slate-50 p-4 sm:p-6 rounded-xl border border-slate-200">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           {/* Nombre */}
           <div>
@@ -182,7 +182,7 @@ const CourseForm = () => {
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             type="submit"
             disabled={submitting}
@@ -205,7 +205,8 @@ const CourseForm = () => {
 
       {/* Tabla de cursos */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+          <table className="min-w-[640px] w-full">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
               <th className="text-left p-4 font-semibold text-slate-700">📝 Nombre</th>
@@ -247,11 +248,12 @@ const CourseForm = () => {
               ))
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
 
         {/* Paginación */}
         {courses.length > ITEMS_PER_PAGE && (
-          <div className="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50">
             <button
               onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
               disabled={currentPage === 0}

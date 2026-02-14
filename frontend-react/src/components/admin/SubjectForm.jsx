@@ -178,7 +178,7 @@ const SubjectForm = () => {
       )}
 
       {/* Formulario */}
-      <form onSubmit={handleSubmit} className="mb-8 bg-slate-50 p-6 rounded-xl border border-slate-200">
+      <form onSubmit={handleSubmit} className="mb-8 bg-slate-50 p-4 sm:p-6 rounded-xl border border-slate-200">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           {/* Nombre */}
           <div>
@@ -218,7 +218,7 @@ const SubjectForm = () => {
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             type="submit"
             disabled={submitting}
@@ -241,7 +241,8 @@ const SubjectForm = () => {
 
       {/* Tabla de materias */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table className="w-full">
+        <div className="overflow-x-auto">
+          <table className="min-w-[760px] w-full">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
               <th className="text-left p-4 font-semibold text-slate-700">📖 Materia</th>
@@ -264,7 +265,7 @@ const SubjectForm = () => {
                   <td className="p-4">{subject.courseName || getCourseName(subject.courseId)}</td>
                   <td className="p-4">{getTeacherNamesBySubject(subject.id)}</td>
                   <td className="p-4">
-                    <div className="flex gap-2 justify-end">
+                    <div className="flex flex-col sm:flex-row gap-2 justify-end">
                       <button
                         onClick={() => handleEdit(subject)}
                         disabled={submitting}
@@ -285,11 +286,12 @@ const SubjectForm = () => {
               ))
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
 
         {/* Paginación */}
         {subjects.length > ITEMS_PER_PAGE && (
-          <div className="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50">
             <button
               onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
               disabled={currentPage === 0}

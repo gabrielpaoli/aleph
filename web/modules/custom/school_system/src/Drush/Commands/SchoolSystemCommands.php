@@ -32,53 +32,134 @@ class SchoolSystemCommands extends DrushCommands {
     // Limpiar datos existentes
     $this->cleanExistingData();
 
-    // Crear cursos
+    // Crear cursos suficientes para 500 estudiantes (máximo 24 por curso)
     $this->output()->writeln('📖 Creating courses...');
-    $courses = [
-      '1A_tarde' => $this->createCourse('1A', 'Tarde'),
-      '1B_manana' => $this->createCourse('1B', 'Mañana'),
-      '2A_tarde' => $this->createCourse('2A', 'Tarde'),
-      '2B_manana' => $this->createCourse('2B', 'Mañana'),
-    ];
+    $max_students_per_course = 24;
+    $total_students = 500;
+    $courses_needed = ceil($total_students / $max_students_per_course); // Aproximadamente 21 cursos
+    
+    $courses = [];
+    $course_letters = ['A', 'B'];
+    $shifts = ['Mañana', 'Tarde', 'Noche'];
+    $course_index = 0;
 
-    // Crear materias para 1A
+    foreach ($shifts as $shift) {
+      for ($year = 1; $year <= 5 && $course_index < $courses_needed; $year++) {
+        foreach ($course_letters as $letter) {
+          if ($course_index >= $courses_needed) {
+            break 3;
+          }
+
+          $course_name = "{$year}{$letter}";
+          $courses[] = [
+            'id' => $this->createCourse($course_name, $shift),
+            'name' => $course_name,
+            'shift' => $shift,
+            'student_count' => 0,
+          ];
+          $course_index++;
+        }
+      }
+    }
+    
+    $this->output()->writeln("   Created " . count($courses) . " courses");
+
+    $this->output()->writeln("   Created " . count($courses) . " courses");
+
+    // Crear materias para los primeros cursos
     $this->output()->writeln('📝 Creating subjects...');
-    $subjects_1a = [
-      'matematicas' => $this->createSubject('Matemáticas', $courses['1A_tarde']),
-      'lengua' => $this->createSubject('Lengua', $courses['1A_tarde']),
-      'historia' => $this->createSubject('Historia', $courses['1A_tarde']),
-      'geografia' => $this->createSubject('Geografía', $courses['1A_tarde']),
-      'ingles' => $this->createSubject('Inglés', $courses['1A_tarde']),
-    ];
+    $subject_names = ['Matemáticas', 'Lengua', 'Historia', 'Geografía', 'Inglés', 'Ciencias Naturales', 'Física', 'Química'];
+    $all_subjects = [];
+    
+    // Crear materias para los primeros 4 cursos
+    for ($i = 0; $i < min(4, count($courses)); $i++) {
+      foreach ($subject_names as $subject_name) {
+        $all_subjects[] = $this->createSubject($subject_name, $courses[$i]['id']);
+      }
+    }
+    
+    $this->output()->writeln("   Created " . count($all_subjects) . " subjects");
 
-    // Crear materias para 1B
-    $subjects_1b = [
-      'matematicas_1b' => $this->createSubject('Matemáticas', $courses['1B_manana']),
-      'lengua_1b' => $this->createSubject('Lengua', $courses['1B_manana']),
-      'ciencias' => $this->createSubject('Ciencias Naturales', $courses['1B_manana']),
-    ];
+    $this->output()->writeln("   Created " . count($all_subjects) . " subjects");
 
-    // Crear materias para 2A
-    $subjects_2a = [
-      'matematicas_2a' => $this->createSubject('Matemáticas', $courses['2A_tarde']),
-      'fisica' => $this->createSubject('Física', $courses['2A_tarde']),
-      'quimica' => $this->createSubject('Química', $courses['2A_tarde']),
-    ];
-
-    // Crear estudiantes
+    // Crear estudiantes y asignarlos a cursos (máximo 24 por curso)
     $this->output()->writeln('👨‍🎓 Creating students...');
-    $students = [
-      $this->createStudent('Juan', 'Pérez', 'padre.perez@email.com', $courses['1A_tarde'], 1),
-      $this->createStudent('María', 'González', 'padre.gonzalez@email.com', $courses['1A_tarde'], 2),
-      $this->createStudent('Carlos', 'Rodríguez', 'padre.rodriguez@email.com', $courses['1A_tarde'], 3),
-      $this->createStudent('Ana', 'Martínez', 'padre.martinez@email.com', $courses['1A_tarde'], 4),
-      $this->createStudent('Luis', 'López', 'padre.lopez@email.com', $courses['1A_tarde'], 5),
-      $this->createStudent('Sofia', 'Fernández', 'padre.fernandez@email.com', $courses['1B_manana'], 6),
-      $this->createStudent('Diego', 'García', 'padre.garcia@email.com', $courses['1B_manana'], 7),
-      $this->createStudent('Valentina', 'Sánchez', 'padre.sanchez@email.com', $courses['1B_manana'], 8),
-      $this->createStudent('Mateo', 'Romero', 'padre.romero@email.com', $courses['2A_tarde'], 9),
-      $this->createStudent('Emma', 'Torres', 'padre.torres@email.com', $courses['2A_tarde'], 10),
+    $students = [];
+    $current_course_index = 0;
+    
+    // Primeros 10 estudiantes con nombres específicos
+    $initial_students = [
+      ['Juan', 'Pérez', 'padre.perez@email.com'],
+      ['María', 'González', 'padre.gonzalez@email.com'],
+      ['Carlos', 'Rodríguez', 'padre.rodriguez@email.com'],
+      ['Ana', 'Martínez', 'padre.martinez@email.com'],
+      ['Luis', 'López', 'padre.lopez@email.com'],
+      ['Sofia', 'Fernández', 'padre.fernandez@email.com'],
+      ['Diego', 'García', 'padre.garcia@email.com'],
+      ['Valentina', 'Sánchez', 'padre.sanchez@email.com'],
+      ['Mateo', 'Romero', 'padre.romero@email.com'],
+      ['Emma', 'Torres', 'padre.torres@email.com'],
     ];
+    
+    for ($i = 0; $i < count($initial_students); $i++) {
+      // Buscar curso con espacio disponible
+      while ($courses[$current_course_index]['student_count'] >= $max_students_per_course) {
+        $current_course_index++;
+      }
+      
+      $student_data = $initial_students[$i];
+      $student = $this->createStudent(
+        $student_data[0], 
+        $student_data[1], 
+        $student_data[2], 
+        $courses[$current_course_index]['id'], 
+        $i + 1
+      );
+      $students[] = $student;
+      $courses[$current_course_index]['student_count']++;
+    }
+
+    // Generar 490 estudiantes adicionales
+    $nombres = ['Lucas', 'Martina', 'Santiago', 'Valentina', 'Mateo', 'Emma', 'Benjamín', 'Isabella', 'Nicolás', 'Mía', 'Sebastián', 'Sofía', 'Joaquín', 'Olivia', 'Tomás', 'Catalina', 'Agustín', 'Emilia', 'Felipe', 'Abril'];
+    $apellidos = ['González', 'Rodríguez', 'Martínez', 'López', 'Fernández', 'García', 'Sánchez', 'Romero', 'Torres', 'Díaz', 'Morales', 'Álvarez', 'Gómez', 'Ruiz', 'Pérez', 'Hernández', 'Castro', 'Vargas', 'Silva', 'Ramos'];
+
+    for ($i = 11; $i <= 500; $i++) {
+      // Buscar curso con espacio disponible
+      while ($current_course_index < count($courses) && $courses[$current_course_index]['student_count'] >= $max_students_per_course) {
+        $current_course_index++;
+      }
+      
+      if ($current_course_index >= count($courses)) {
+        $this->output()->writeln("   Warning: Not enough courses for all students!");
+        break;
+      }
+      
+      $nombre = $nombres[($i - 1) % count($nombres)];
+      $apellido = $apellidos[($i - 1) % count($apellidos)];
+      $email = "padre.estudiante{$i}@email.com";
+      
+      $student = $this->createStudent(
+        $nombre, 
+        $apellido, 
+        $email, 
+        $courses[$current_course_index]['id'], 
+        $i
+      );
+      $students[] = $student;
+      $courses[$current_course_index]['student_count']++;
+    }
+
+    $this->output()->writeln("   Created " . count($students) . " students");
+    
+    // Mostrar distribución de estudiantes por curso
+    $this->output()->writeln('');
+    $this->output()->writeln('📊 Student distribution:');
+    foreach ($courses as $course) {
+      if ($course['student_count'] > 0) {
+        $this->output()->writeln("   Course {$course['name']} ({$course['shift']}): {$course['student_count']} students");
+      }
+    }
+    $this->output()->writeln('');
 
     // Crear docentes
     $this->output()->writeln('👨‍🏫 Creating teachers (as users with docente role)...');
@@ -92,32 +173,39 @@ class SchoolSystemCommands extends DrushCommands {
     // Crear directivo
     $this->createUser('directivo@escuela1.com', '1234', 'directivo');
     
-    // Crear docentes con materias asignadas
-    $this->createUser('roberto.diaz@escuela1.com', '1234', 'docente', [
-      $subjects_1a['matematicas'],
-      $subjects_1b['matematicas_1b'],
-    ]);
-    $this->createUser('laura.morales@escuela1.com', '1234', 'docente', [
-      $subjects_1a['lengua'],
-      $subjects_1b['lengua_1b'],
-    ]);
+    // Crear docentes con materias asignadas (usar las primeras materias creadas)
+    if (!empty($all_subjects)) {
+      $this->createUser('roberto.diaz@escuela1.com', '1234', 'docente', [
+        $all_subjects[0], // Primera materia
+        $all_subjects[1], // Segunda materia
+      ]);
+      $this->createUser('laura.morales@escuela1.com', '1234', 'docente', [
+        $all_subjects[2], // Tercera materia
+        $all_subjects[3], // Cuarta materia
+      ]);
+    }
 
     foreach ($students as $student) {
       $email = $student->get('field_parent_email')->value;
       $this->createUser($email, '1234', 'parent');
     }
 
+    $this->output()->writeln('   Created ' . count($students) . ' parent users');
+
     // Crear notas
     $this->output()->writeln('📊 Creating grades...');
 
-    // Juan Pérez
-    $this->createGrade($students[0]->id(), $subjects_1a['matematicas'], 8, '2026-03-15');
-    $this->createGrade($students[0]->id(), $subjects_1a['matematicas'], 9, '2026-04-20');
-    $this->createGrade($students[0]->id(), $subjects_1a['lengua'], 7, '2026-03-18');
+    // Crear algunas calificaciones de ejemplo para los primeros estudiantes
+    if (!empty($all_subjects) && !empty($students)) {
+      // Juan Pérez (estudiante 0)
+      $this->createGrade($students[0]->id(), $all_subjects[0], 8, '2026-03-15');
+      $this->createGrade($students[0]->id(), $all_subjects[0], 9, '2026-04-20');
+      $this->createGrade($students[0]->id(), $all_subjects[1], 7, '2026-03-18');
 
-    // María González
-    $this->createGrade($students[1]->id(), $subjects_1a['matematicas'], 10, '2026-03-15');
-    $this->createGrade($students[1]->id(), $subjects_1a['lengua'], 9, '2026-03-18');
+      // María González (estudiante 1)
+      $this->createGrade($students[1]->id(), $all_subjects[0], 10, '2026-03-15');
+      $this->createGrade($students[1]->id(), $all_subjects[1], 9, '2026-03-18');
+    }
 
     // Crear asistencias
     $this->output()->writeln('📅 Creating attendance records...');
@@ -125,6 +213,164 @@ class SchoolSystemCommands extends DrushCommands {
 
     $this->output()->writeln('');
     $this->output()->writeln('✅ Dummy data generated successfully!');
+  }
+
+  /**
+   * Create test users only.
+   */
+  #[CLI\Command(name: 'school-system:create-users', aliases: ['ss:users'])]
+  #[CLI\Usage(name: 'drush school-system:create-users', description: 'Create test users for School System')]
+  public function createUsers() {
+    $this->output()->writeln('👤 Creating test users...');
+    $this->output()->writeln('');
+
+    // Crear usuarios administrativos
+    $this->output()->writeln('Creating admin user...');
+    $this->createUser('admin@escuela1.com', '1234', 'administrator');
+
+    $this->output()->writeln('Creating preceptor users...');
+    $this->createUser('preceptor@escuela1.com', '1234', 'preceptor');
+    $this->createUser('preceptor@escuela2.com', '1234', 'preceptor');
+
+    $this->output()->writeln('Creating directivo user...');
+    $this->createUser('directivo@escuela1.com', '1234', 'directivo');
+
+    $this->output()->writeln('Creating docente users...');
+    $this->createUser('roberto.diaz@escuela1.com', '1234', 'docente');
+    $this->createUser('laura.morales@escuela1.com', '1234', 'docente');
+
+    $this->output()->writeln('Creating parent users...');
+    $this->createUser('padre.perez@email.com', '1234', 'parent');
+    $this->createUser('padre.gonzalez@email.com', '1234', 'parent');
+    $this->createUser('padre.rodriguez@email.com', '1234', 'parent');
+    $this->createUser('padre.martinez@email.com', '1234', 'parent');
+    $this->createUser('padre.lopez@email.com', '1234', 'parent');
+    $this->createUser('padre.fernandez@email.com', '1234', 'parent');
+    $this->createUser('padre.garcia@email.com', '1234', 'parent');
+    $this->createUser('padre.sanchez@email.com', '1234', 'parent');
+    $this->createUser('padre.romero@email.com', '1234', 'parent');
+    $this->createUser('padre.torres@email.com', '1234', 'parent');
+
+    // Generar 490 usuarios de padres adicionales (del 11 al 500)
+    for ($i = 11; $i <= 500; $i++) {
+      $email = "padre.estudiante{$i}@email.com";
+      $this->createUser($email, '1234', 'parent');
+    }
+
+    $this->output()->writeln('');
+    $this->output()->writeln('✅ Test users created successfully!');
+    $this->output()->writeln('');
+    $this->output()->writeln('📋 Created users:');
+    $this->output()->writeln('   - admin@escuela1.com (admin)');
+    $this->output()->writeln('   - preceptor@escuela1.com (preceptor)');
+    $this->output()->writeln('   - preceptor@escuela2.com (preceptor)');
+    $this->output()->writeln('   - directivo@escuela1.com (directivo)');
+    $this->output()->writeln('   - roberto.diaz@escuela1.com (docente)');
+    $this->output()->writeln('   - laura.morales@escuela1.com (docente)');
+    $this->output()->writeln('   - 500 parent users (padre.*)');
+    $this->output()->writeln('');
+    $this->output()->writeln('🔑 All passwords: 1234');
+  }
+
+  /**
+   * Assign 4 random grades with random subjects to each student.
+   */
+  #[CLI\Command(name: 'school-system:random-grades', aliases: ['ss:random-grades'])]
+  #[CLI\Usage(name: 'drush school-system:random-grades', description: 'Assign 4 random grades to each student')]
+  public function assignRandomGrades() {
+    $this->output()->writeln('🎲 Assigning 4 random grades to each student...');
+
+    $student_ids = \Drupal::entityQuery('node')
+      ->condition('type', 'student')
+      ->accessCheck(FALSE)
+      ->execute();
+
+    $subject_ids = \Drupal::entityQuery('node')
+      ->condition('type', 'subject')
+      ->accessCheck(FALSE)
+      ->execute();
+
+    if (empty($student_ids)) {
+      $this->output()->writeln('⚠️ No students found.');
+      return;
+    }
+
+    if (empty($subject_ids)) {
+      $this->output()->writeln('⚠️ No subjects found.');
+      return;
+    }
+
+    $students = Node::loadMultiple($student_ids);
+    $subjects = Node::loadMultiple($subject_ids);
+
+    $subjects_by_course = [];
+    foreach ($subjects as $subject) {
+      $course_ref = $subject->get('field_course_ref')->target_id ?? NULL;
+      if ($course_ref) {
+        if (!isset($subjects_by_course[$course_ref])) {
+          $subjects_by_course[$course_ref] = [];
+        }
+        $subjects_by_course[$course_ref][] = (int) $subject->id();
+      }
+    }
+
+    $count = 0;
+    $skipped = 0;
+    foreach ($students as $student) {
+      $student_id = (int) $student->id();
+      $course_id = $student->get('field_course_ref')->target_id ?? NULL;
+
+      if (!$course_id || empty($subjects_by_course[$course_id])) {
+        $skipped++;
+        continue;
+      }
+
+      $available_subjects = $subjects_by_course[$course_id];
+      shuffle($available_subjects);
+      $selected_subjects = array_slice($available_subjects, 0, min(4, count($available_subjects)));
+
+      while (count($selected_subjects) < 4) {
+        $selected_subjects[] = $available_subjects[array_rand($available_subjects)];
+      }
+
+      foreach ($selected_subjects as $subject_id) {
+        $grade = mt_rand(1, 10);
+        $date = $this->getRandomDate('2026-03-01', '2026-12-31');
+        $this->createGrade($student_id, $subject_id, $grade, $date);
+        $count++;
+      }
+    }
+
+    $this->output()->writeln("✅ Created $count random grades for " . count($students) . ' students');
+    if ($skipped > 0) {
+      $this->output()->writeln("⚠️ Skipped $skipped students without subjects for their course");
+    }
+  }
+
+  /**
+   * Delete all grade nodes.
+   */
+  #[CLI\Command(name: 'school-system:clear-grades', aliases: ['ss:clear-grades'])]
+  #[CLI\Usage(name: 'drush school-system:clear-grades', description: 'Delete all grades')]
+  public function clearGrades() {
+    $this->output()->writeln('🗑️  Deleting all grades...');
+
+    $grade_ids = \Drupal::entityQuery('node')
+      ->condition('type', 'grade')
+      ->accessCheck(FALSE)
+      ->execute();
+
+    if (empty($grade_ids)) {
+      $this->output()->writeln('⚠️ No grades found.');
+      return;
+    }
+
+    $grades = Node::loadMultiple($grade_ids);
+    foreach ($grades as $grade) {
+      $grade->delete();
+    }
+
+    $this->output()->writeln('✅ All grades deleted.');
   }
 
   /**
@@ -263,6 +509,13 @@ class SchoolSystemCommands extends DrushCommands {
       'status' => 1,
     ]);
     $node->save();
+  }
+
+  private function getRandomDate($start_date, $end_date) {
+    $start = strtotime($start_date);
+    $end = strtotime($end_date);
+    $timestamp = mt_rand($start, $end);
+    return date('Y-m-d', $timestamp);
   }
 
   private function createUser($email, $password, $role, $subject_ids = []) {

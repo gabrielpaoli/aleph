@@ -30,8 +30,9 @@ export const useGrades = (studentId = null) => {
         data = await gradeService.getAll();
       }
 
-      console.log('✅ Calificaciones cargadas de Drupal:', data);
-      setGrades(data || []);
+      const items = Array.isArray(data) ? data : (data?.items || []);
+      console.log('✅ Calificaciones cargadas de Drupal:', items);
+      setGrades(items);
     } catch (err) {
       console.error('❌ Error cargando calificaciones:', err);
       setError(err.message);

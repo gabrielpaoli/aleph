@@ -25,17 +25,17 @@ const AdminPanel = () => {
   const ActiveComponent = tabs.find(t => t.id === activeTab)?.component;
 
   return (
-    <div className="p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+    <div className="p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-3xl font-bold mb-6 text-slate-800">⚙️ Panel de Administración</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-slate-800">⚙️ Panel de Administración</h2>
 
         <div className="mb-6">
-          <div className="flex gap-2 bg-white p-2 rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+          <div className="flex flex-wrap gap-2 bg-white p-2 rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
             {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-shrink-0 px-6 py-3 font-semibold rounded-lg transition-all ${
+                className={`flex-shrink-0 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-semibold rounded-lg transition-all ${
                   activeTab === tab.id
                     ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md'
                     : 'text-slate-600 hover:bg-slate-100'
@@ -48,7 +48,7 @@ const AdminPanel = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
           {ActiveComponent && <ActiveComponent />}
         </div>
       </div>

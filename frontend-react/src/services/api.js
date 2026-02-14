@@ -362,23 +362,39 @@ export const attendanceService = {
 
 // ============ NOTAS ============
 export const gradeService = {
-  getAll: async () => {
+  getAll: async (page = 1, limit = 50, filters = {}) => {
     if (USE_DUMMY_DATA) {
       return Promise.resolve(dummyData.grades);
     }
     // Agregar timestamp para evitar caché del navegador
-    const response = await api.get(`/api/grades?_t=${Date.now()}`);
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      _t: String(Date.now())
+    });
+
+    if (filters.studentId) {
+      params.set('studentId', String(filters.studentId));
+    }
+    if (filters.subjectId) {
+      params.set('subjectId', String(filters.subjectId));
+    }
+    if (filters.subjectIds) {
+      params.set('subjectIds', String(filters.subjectIds));
+    }
+
+    const response = await api.get(`/api/grades?${params.toString()}`);
     return response.data;
   },
 
-  getByStudent: async (studentId) => {
+  getByStudent: async (studentId, page = 1, limit = 50) => {
     if (USE_DUMMY_DATA) {
       console.log('📦 Using dummy data for grades');
       return Promise.resolve(dummyData.grades.filter(g => g.studentId === studentId));
     }
     console.log(`🌐 Fetching grades for student ${studentId}`);
     // Agregar timestamp para evitar caché del navegador
-    const response = await api.get(`/api/grades?studentId=${studentId}&_t=${Date.now()}`);
+    const response = await api.get(`/api/grades?studentId=${studentId}&page=${page}&limit=${limit}&_t=${Date.now()}`);
     console.log('✅ Grades response data:', response.data);
     return response.data;
   },

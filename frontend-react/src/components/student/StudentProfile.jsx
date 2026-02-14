@@ -144,7 +144,7 @@ const StudentProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6 flex items-center justify-center">
         <div className="text-2xl">⏳ Cargando datos del estudiante...</div>
       </div>
     );
@@ -152,7 +152,7 @@ const StudentProfile = () => {
 
   if (error && !student && grades.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6">
         <div className="max-w-2xl mx-auto">
           <div className="bg-red-50 border-2 border-red-200 text-red-700 px-6 py-4 rounded-lg mb-4">
             <h2 className="text-2xl font-bold mb-2">❌ {error || 'Estudiante no encontrado'}</h2>
@@ -195,17 +195,17 @@ const StudentProfile = () => {
     });
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <button
               onClick={() => navigate(-1)}
               className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-2 transition-colors"
             >
               <span className="text-xl">←</span> Volver
             </button>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={refreshGrades}
                 className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
@@ -223,15 +223,15 @@ const StudentProfile = () => {
           </div>
 
           {/* Information Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-6">
-            <div className="flex items-start justify-between mb-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
               <div>
                 <h1 className="text-4xl font-bold text-slate-800 mb-2">
                   Estudiante #{studentId}
                 </h1>
                 <p className="text-slate-500 font-medium">Registros disponibles: {grades.length} calificaciones</p>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <div className="inline-block bg-gradient-to-br from-indigo-500 to-purple-600 text-white px-6 py-4 rounded-xl shadow-lg">
                   <div className="text-sm font-semibold opacity-90">Total de Calificaciones</div>
                   <div className="text-3xl font-bold">{grades.length}</div>
@@ -246,7 +246,7 @@ const StudentProfile = () => {
           </div>
 
           {/* Subjects and Grades */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-slate-800">
               📚 Calificaciones por Materia
             </h2>
@@ -338,17 +338,17 @@ const StudentProfile = () => {
     : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <button
             onClick={() => navigate(-1)}
             className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-2 transition-colors"
           >
             <span className="text-xl">←</span> Volver
           </button>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <button
               onClick={refreshGrades}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
@@ -366,15 +366,15 @@ const StudentProfile = () => {
         </div>
 
         {/* Información Personal */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-6">
-          <div className="flex items-start justify-between mb-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
             <div>
               <h1 className="text-4xl font-bold text-slate-800 mb-2">
                 {student.firstName} {student.lastName}
               </h1>
               <p className="text-slate-500 font-medium">Legajo #{student.legajo || student.id}</p>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <div className="inline-block bg-gradient-to-br from-indigo-500 to-purple-600 text-white px-6 py-4 rounded-xl shadow-lg">
                 <div className="text-sm font-semibold opacity-90">Curso</div>
                 <div className="text-3xl font-bold">{course?.name || 'N/A'}</div>
@@ -402,7 +402,7 @@ const StudentProfile = () => {
         </div>
 
         {/* Estadísticas de Asistencia */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8 mb-6">
           <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-slate-800">
             📊 Asistencias
           </h2>
@@ -444,7 +444,7 @@ const StudentProfile = () => {
         </div>
 
         {/* Materias y Notas */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8">
           <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-slate-800">
             📚 Materias y Calificaciones
           </h2>
@@ -527,7 +527,7 @@ const StudentProfile = () => {
         </div>
 
         {/* Resumen General */}
-        <div className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl shadow-lg p-8 mt-6 text-white">
+        <div className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl shadow-lg p-5 sm:p-8 mt-6 text-white">
           <h2 className="text-2xl font-bold mb-6">📈 Resumen General</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">

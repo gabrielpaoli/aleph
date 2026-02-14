@@ -176,7 +176,7 @@ const StudentDashboard = ({ studentId: initialStudentId }) => {
   const stats = getAttendanceStats();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Selector de Estudiantes si hay múltiples */}
         {parentStudents.length > 1 && (
@@ -210,10 +210,10 @@ const StudentDashboard = ({ studentId: initialStudentId }) => {
         )}
 
         {/* Información del Estudiante */}
-        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-slate-800">👨‍🎓 {student?.firstName} {student?.lastName}</h1>
-            <span className="text-sm font-semibold bg-blue-100 text-blue-700 px-4 py-2 rounded-full">
+        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">👨‍🎓 {student?.firstName} {student?.lastName}</h1>
+            <span className="text-sm font-semibold bg-blue-100 text-blue-700 px-4 py-2 rounded-full w-fit">
               {course?.name} - {course?.shift}
             </span>
           </div>
@@ -234,7 +234,7 @@ const StudentDashboard = ({ studentId: initialStudentId }) => {
         </div>
 
         {/* Estadísticas de Asistencia */}
-        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-6">
+        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-4 sm:p-6">
           <h2 className="text-2xl font-bold text-slate-800 mb-6">📅 Asistencias</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-lg p-6 text-center">
@@ -253,7 +253,7 @@ const StudentDashboard = ({ studentId: initialStudentId }) => {
         </div>
 
         {/* Calificaciones por Materia */}
-        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-6">
+        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-4 sm:p-6">
           <h2 className="text-2xl font-bold text-slate-800 mb-6">📊 Notas por Materia</h2>
           {subjects.length === 0 ? (
             <p className="text-slate-600">No hay materias asignadas</p>
@@ -295,7 +295,7 @@ const StudentDashboard = ({ studentId: initialStudentId }) => {
         </div>
 
         {/* Notas Recibidas */}
-        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-6">
+        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-4 sm:p-6">
           <NotesList studentId={currentStudentId} />
         </div>
       </div>

@@ -28,17 +28,21 @@ const TeacherGradeManagement = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [gradesPage, setGradesPage] = useState(1);
+  const [gradesPages, setGradesPages] = useState(1);
+  const [gradesTotal, setGradesTotal] = useState(0);
 
-  const ITEMS_PER_PAGE = 8;
+  const GRADES_LIMIT = 50;
 
   useEffect(() => {
     loadData();
   }, [user]);
 
   useEffect(() => {
-    applyFilters();
-  }, [grades, subjects]);
+    if (!loading) {
+      loadGrades(gradesPage);
+    }
+  }, [gradesPage]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -70,10 +74,6 @@ const TeacherGradeManagement = () => {
       setLoading(true);
       console.log('📥 Cargando datos para docente...');
 
-      // Cargar todas las calificaciones
-      const gradesData = await gradeService.getAll();
-      setGrades(gradesData || []);
-
       // Cargar todos los estudiantes
       const studentsData = await studentService.getAll();
 
@@ -99,6 +99,9 @@ const TeacherGradeManagement = () => {
         setStudents(studentsData || []);
       }
 
+      await loadGrades(1);
+      setGradesPage(1);
+
       setErrorMessage('');
     } catch (err) {
       console.error('❌ Error cargando datos:', err);
@@ -108,14 +111,25 @@ const TeacherGradeManagement = () => {
     }
   };
 
-  const applyFilters = () => {
-    // Filtrar solo calificaciones de sus materias
-    const teacherSubjectIds = subjects.map(s => s.id);
-    const filtered = grades.filter(g =>
-      teacherSubjectIds.includes(g.subjectId)
-    );
-    setFilteredGrades(filtered);
-    setCurrentPage(0);
+  const loadGrades = async (page = gradesPage) => {
+    const gradeFilters = {};
+    if (user?.subjectIds?.length > 0) {
+      gradeFilters.subjectIds = user.subjectIds.join(',');
+    }
+
+    const gradesData = await gradeService.getAll(page, GRADES_LIMIT, gradeFilters);
+    const gradeItems = Array.isArray(gradesData) ? gradesData : (gradesData?.items || []);
+
+    setGrades(gradeItems);
+    setFilteredGrades(gradeItems);
+
+    if (!Array.isArray(gradesData)) {
+      setGradesTotal(gradesData.total ?? gradeItems.length);
+      setGradesPages(gradesData.pages ?? 1);
+    } else {
+      setGradesTotal(gradeItems.length);
+      setGradesPages(1);
+    }
   };
 
   const handleSelectStudent = (student) => {
@@ -255,11 +269,11 @@ const TeacherGradeManagement = () => {
   }
 
   return (
-    <div className="p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+    <div className="p-4 sm:p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-slate-800 mb-2">⭐ Gestionar Calificaciones</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">⭐ Gestionar Calificaciones</h2>
           <p className="text-slate-600">Agrega, edita o visualiza calificaciones de tus estudiantes</p>
         </div>
 
@@ -406,7 +420,7 @@ const TeacherGradeManagement = () => {
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 type="submit"
                 disabled={submitting}
@@ -430,12 +444,13 @@ const TeacherGradeManagement = () => {
 
         {/* Tabla de calificaciones */}
         <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-          <div className="p-6 border-b border-slate-200">
+          <div className="p-4 sm:p-6 border-b border-slate-200">
             <h3 className="text-xl font-bold text-slate-800">📋 Calificaciones Registradas</h3>
-            <p className="text-slate-600 text-sm mt-1">Total: {filteredGrades.length} calificaciones</p>
+            <p className="text-slate-600 text-sm mt-1">Total: {gradesTotal} calificaciones</p>
           </div>
 
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="min-w-[860px] w-full">
             <thead className="bg-gradient-to-r from-slate-100 to-slate-50 border-b border-slate-200">
               <tr>
                 <th className="text-left p-4 font-semibold text-slate-700">Estudiante</th>
@@ -447,7 +462,7 @@ const TeacherGradeManagement = () => {
             </thead>
             <tbody>
               {filteredGrades.length > 0 ? (
-                filteredGrades.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map((grade, index) => (
+                filteredGrades.map((grade, index) => (
                   <tr
                     key={grade.id}
                     className={`border-b border-slate-200 ${
@@ -467,7 +482,7 @@ const TeacherGradeManagement = () => {
                       {new Date(grade.date).toLocaleDateString('es')}
                     </td>
                     <td className="p-4">
-                      <div className="flex gap-2 justify-end">
+                      <div className="flex flex-col sm:flex-row gap-2 justify-end">
                         <button
                           onClick={() => handleEdit(grade)}
                           disabled={submitting}
@@ -494,24 +509,25 @@ const TeacherGradeManagement = () => {
                 </tr>
               )}
             </tbody>
-          </table>
+            </table>
+          </div>
 
           {/* Paginación */}
-          {filteredGrades.length > ITEMS_PER_PAGE && (
-            <div className="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50">
+          {gradesPages > 1 && (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50">
               <button
-                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                disabled={currentPage === 0}
+                onClick={() => setGradesPage(Math.max(1, gradesPage - 1))}
+                disabled={gradesPage === 1}
                 className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ← Anterior
               </button>
               <span className="text-sm font-semibold text-slate-600">
-                Página {currentPage + 1} de {Math.ceil(filteredGrades.length / ITEMS_PER_PAGE)}
+                Página {gradesPage} de {gradesPages}
               </span>
               <button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage >= Math.ceil(filteredGrades.length / ITEMS_PER_PAGE) - 1}
+                onClick={() => setGradesPage(Math.min(gradesPages, gradesPage + 1))}
+                disabled={gradesPage >= gradesPages}
                 className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Siguiente →
@@ -522,7 +538,7 @@ const TeacherGradeManagement = () => {
 
         {/* Resumen */}
         <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-800">
-          <p className="font-semibold">📊 Resumen: {filteredGrades.length} calificaciones en tus materias</p>
+          <p className="font-semibold">📊 Resumen: {gradesTotal} calificaciones en tus materias</p>
           <p className="text-sm mt-1">🔄 Sincronizadas con el sistema en tiempo real</p>
         </div>
       </div>
