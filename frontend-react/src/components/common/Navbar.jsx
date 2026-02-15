@@ -34,6 +34,12 @@ const Navbar = () => {
                   📧 Notificaciones
                 </Link>
                 <Link
+                  to="/validar-materias"
+                  className="px-4 py-2 rounded-lg hover:bg-white/20 transition-colors font-medium"
+                >
+                  ✅ Validar Materias
+                </Link>
+                <Link
                   to="/admin"
                   className="px-4 py-2 rounded-lg hover:bg-white/20 transition-colors font-medium"
                 >

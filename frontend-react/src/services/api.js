@@ -994,6 +994,53 @@ export const noteService = {
   }
 }
 
+// ============ SUBJECT ENROLLMENTS ============
+export const subjectEnrollmentService = {
+  getByCourse: async (courseId, academicYear) => {
+    if (USE_DUMMY_DATA) {
+      const year = Number(academicYear);
+      return Promise.resolve(
+        (dummyData.subjectEnrollments || []).filter(
+          (item) => item.courseId === courseId && item.academicYear === year
+        )
+      );
+    }
+
+    const params = new URLSearchParams({
+      academicYear: String(academicYear),
+      _t: String(Date.now()),
+    });
+    const response = await api.get(`/api/subject-enrollments/course/${courseId}?${params.toString()}`);
+    return response.data;
+  },
+
+  upsert: async (items) => {
+    if (USE_DUMMY_DATA) {
+      dummyData.subjectEnrollments = dummyData.subjectEnrollments || [];
+      items.forEach((item) => {
+        const existing = dummyData.subjectEnrollments.find(
+          (enrollment) =>
+            enrollment.studentId === item.studentId &&
+            enrollment.subjectId === item.subjectId &&
+            enrollment.academicYear === item.academicYear
+        );
+        if (existing) {
+          existing.status = item.status;
+        } else {
+          dummyData.subjectEnrollments.push({
+            ...item,
+            id: Date.now() + Math.random(),
+          });
+        }
+      });
+      return Promise.resolve({ success: true });
+    }
+
+    const response = await api.post('/api/subject-enrollments', { items });
+    return response.data;
+  },
+};
+
 // ============ EXCLUDED DATES ============
 export const excludedDateService = {
   getAll: async (page = 1, limit = 50) => {

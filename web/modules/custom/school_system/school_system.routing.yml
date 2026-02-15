@@ -337,6 +337,23 @@ school_system.api.teachers.update:
   requirements:
     _access: 'TRUE'
 
+# Subject enrollment (manual approval status by preceptor)
+school_system.api.subject_enrollments.by_course:
+  path: '/api/subject-enrollments/course/{course_id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\SubjectEnrollmentApiController::getByCourse'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.subject_enrollments.upsert:
+  path: '/api/subject-enrollments'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\SubjectEnrollmentApiController::upsert'
+  methods: [POST]
+  requirements:
+    _access: 'TRUE'
+
 # Teachers (legacy - from Teacher nodes)
 school_system.api.teachers:
   path: '/api/teachers'

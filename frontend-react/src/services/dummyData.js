@@ -86,6 +86,8 @@ export const dummyData = {
 
   attendance: generateAttendanceData(),
 
+  subjectEnrollments: [],
+
   users: [
     { id: 1, email: 'preceptor@escuela1.com', role: 'preceptor', schoolId: 1 },
     { id: 2, email: 'preceptor@escuela2.com', role: 'preceptor', schoolId: 2 },
