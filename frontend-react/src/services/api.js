@@ -852,4 +852,66 @@ export const noteService = {
   }
 };
 
-export default api;
+// ============ EXCLUDED DATES ============
+export const excludedDateService = {
+  getAll: async (page = 1, limit = 50) => {
+    console.log(`🌐 Fetching excluded dates (page ${page})`);
+    try {
+      const response = await api.get(`/api/excluded-dates?page=${page}&limit=${limit}&_t=${Date.now()}`);
+      console.log('✅ Excluded dates from API:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching excluded dates:', error);
+      throw error;
+    }
+  },
+
+  getByDateRange: async (startDate, endDate) => {
+    console.log(`🌐 Fetching excluded dates from ${startDate} to ${endDate}`);
+    try {
+      const response = await api.get(`/api/excluded-dates/range?startDate=${startDate}&endDate=${endDate}&_t=${Date.now()}`);
+      console.log('✅ Excluded dates in range from API:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching excluded dates:', error);
+      throw error;
+    }
+  },
+
+  create: async (excludedDate) => {
+    console.log('📝 Creating excluded date:', excludedDate);
+    try {
+      const response = await api.post('/api/excluded-dates', excludedDate);
+      console.log('✅ Excluded date created:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error creating excluded date:', error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    console.log(`🗑️ Deleting excluded date ${id}`);
+    try {
+      const response = await api.delete(`/api/excluded-dates/${id}`);
+      console.log('✅ Excluded date deleted:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error deleting excluded date:', error);
+      throw error;
+    }
+  },
+
+  update: async (id, excludedDate) => {
+    console.log(`✏️ Updating excluded date ${id}:`, excludedDate);
+    try {
+      const response = await api.patch(`/api/excluded-dates/${id}`, excludedDate);
+      console.log('✅ Excluded date updated:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error updating excluded date:', error);
+      throw error;
+    }
+  }
+};
+

@@ -65,6 +65,10 @@ function _school_system_create_content_types() {
       'name' => 'Note',
       'description' => 'Nota para Padres',
     ],
+    'excluded_date' => [
+      'name' => 'Excluded Date',
+      'description' => 'Día excluido del calendario de asistencias',
+    ],
   ];
 
   foreach ($types as $type_id => $type_info) {
@@ -171,6 +175,12 @@ function _school_system_create_fields() {
   _school_system_create_field('node', 'note', 'field_date_note', 'datetime', 'Date', FALSE, [
     'datetime_type' => 'datetime',
   ]);
+
+  // ========== EXCLUDED DATE FIELDS ==========
+  _school_system_create_field('node', 'excluded_date', 'field_excluded_date', 'datetime', 'Excluded Date', FALSE, [
+    'datetime_type' => 'date',
+  ]);
+  _school_system_create_field('node', 'excluded_date', 'field_excluded_reason', 'string', 'Reason', FALSE);
 }
 
 /**
@@ -252,7 +262,7 @@ function _school_system_create_roles() {
 function school_system_uninstall() {
   // Eliminar content types en orden inverso de dependencias
   // Primero los que tienen referencias, luego los referenciados
-  $types = ['attendance', 'grade', 'note', 'teacher', 'student', 'subject', 'course'];
+  $types = ['attendance', 'grade', 'note', 'excluded_date', 'teacher', 'student', 'subject', 'course'];
 
   foreach ($types as $type) {
     // Eliminar todos los nodos de este tipo primero
@@ -293,6 +303,9 @@ function _school_system_assign_permissions() {
     'create note content',
     'edit any note content',
     'delete any note content',
+    'create excluded_date content',
+    'edit any excluded_date content',
+    'delete any excluded_date content',
   ];
 
   $docente_permissions = [
@@ -311,6 +324,9 @@ function _school_system_assign_permissions() {
     'access administration pages',
     'bypass node access',
     'administer users',
+    'create excluded_date content',
+    'edit any excluded_date content',
+    'delete any excluded_date content',
   ];
 
   // Assign permissions to preceptor role

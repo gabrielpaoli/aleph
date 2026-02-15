@@ -410,3 +410,43 @@ school_system.api.notes.create:
   methods: [POST]
   requirements:
     _access: 'TRUE'
+# Excluded Dates
+school_system.api.excluded_dates:
+  path: '/api/excluded-dates'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\ExcludedDateApiController::getAll'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.excluded_dates.range:
+  path: '/api/excluded-dates/range'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\ExcludedDateApiController::getByDateRange'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.excluded_dates.create:
+  path: '/api/excluded-dates'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\ExcludedDateApiController::create'
+  methods: [POST]
+  requirements:
+    _permission: 'create excluded_date content'
+
+school_system.api.excluded_dates.delete:
+  path: '/api/excluded-dates/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\ExcludedDateApiController::delete'
+  methods: [DELETE]
+  requirements:
+    _permission: 'delete any excluded_date content'
+
+school_system.api.excluded_dates.update:
+  path: '/api/excluded-dates/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\ExcludedDateApiController::update'
+  methods: [PATCH]
+  requirements:
+    _permission: 'edit any excluded_date content'

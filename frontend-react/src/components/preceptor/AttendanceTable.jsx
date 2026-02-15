@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { ATTENDANCE_STATUS } from '../../services/dummyData';
-import { studentService, courseService, attendanceService, subjectService } from '../../services/api';
+import { studentService, courseService, attendanceService, subjectService, excludedDateService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import ExcludedDatesManager from './ExcludedDatesManager';
 
 const AttendanceTable = () => {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ const AttendanceTable = () => {
   const [attendance, setAttendance] = useState([]);
   const [yearAttendance, setYearAttendance] = useState([]);
   const [allYearsAttendance, setAllYearsAttendance] = useState({}); // Por curso
+  const [excludedDates, setExcludedDates] = useState([]); // Días excluidos
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -31,6 +33,7 @@ const AttendanceTable = () => {
   // Cargar cursos al montar o cuando cambia el usuario
   useEffect(() => {
     loadCourses();
+    loadExcludedDates();
   }, [user, isTeacher]);
 
   // Cargar estadísticas anuales cuando los cursos se cargan o cambia el año
@@ -206,6 +209,18 @@ const AttendanceTable = () => {
     }
   };
 
+  const loadExcludedDates = async () => {
+    try {
+      console.log('📆 Loading excluded dates...');
+      const response = await excludedDateService.getAll(1, 1000);
+      const dates = (response.items || []).map(item => item.date);
+      setExcludedDates(dates);
+      console.log('✅ Excluded dates loaded:', dates.length);
+    } catch (err) {
+      console.error('❌ Error loading excluded dates:', err);
+    }
+  };
+
   const getStatsForCourse = (courseId) => {
     const stats = {
       totalPresent: 0,
@@ -224,6 +239,15 @@ const AttendanceTable = () => {
   };
 
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+
+  const isExcludedOrWeekend = (year, month, day) => {
+    const date = new Date(year, month, day);
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    // Construir el string de fecha directamente sin conversión de zona horaria
+    const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const isExcluded = excludedDates.includes(dateString);
+    return isWeekend || isExcluded;
+  };
 
   const handleAttendanceChange = (studentId, day, status) => {
     const date = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -453,6 +477,18 @@ const AttendanceTable = () => {
           >
             📊 Resumen Anual
           </button>
+          {(user.role === 'preceptor' || user.role === 'directivo') && (
+            <button
+              onClick={() => setActiveTab('excluded-dates')}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                activeTab === 'excluded-dates'
+                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              📆 Días Excluidos
+            </button>
+          )}
         </div>
 
         {activeTab === 'annual' && courses.length > 0 && (
@@ -485,6 +521,10 @@ const AttendanceTable = () => {
           </div>
         )}
 
+        {activeTab === 'excluded-dates' && (
+          <ExcludedDatesManager />
+        )}
+
         {activeTab === 'monthly' && (students.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm p-8 text-center">
             <p className="text-slate-500 text-lg">
@@ -502,12 +542,12 @@ const AttendanceTable = () => {
                 {Array.from({ length: daysInMonth }, (_, i) => {
                   const date = new Date(selectedYear, selectedMonth, i + 1);
                   const dayName = date.toLocaleDateString('es', { weekday: 'short' });
-                  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                  const isDisabled = isExcludedOrWeekend(selectedYear, selectedMonth, i + 1);
 
                   return (
                     <th
                       key={i}
-                      className={`border p-2 text-xs ${isWeekend ? 'bg-indigo-700' : ''}`}
+                      className={`border p-2 text-xs ${isDisabled ? 'bg-indigo-700' : ''}`}
                     >
                       <div className="font-bold">{i + 1}</div>
                       <div className="text-[10px] opacity-90">{dayName}</div>
@@ -529,16 +569,15 @@ const AttendanceTable = () => {
                       {student.lastName}, {student.firstName}
                     </td>
                     {Array.from({ length: daysInMonth }, (_, day) => {
-                      const date = new Date(selectedYear, selectedMonth, day + 1);
-                      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                      const isDisabled = isExcludedOrWeekend(selectedYear, selectedMonth, day + 1);
                       const status = getAttendanceStatus(student.id, day + 1);
 
                       return (
                         <td
                           key={day}
-                          className={`border p-0 ${isWeekend ? 'bg-slate-100' : getStatusColor(status)}`}
+                          className={`border p-0 ${isDisabled ? 'bg-slate-100' : getStatusColor(status)}`}
                         >
-                          {!isWeekend && (
+                          {!isDisabled && (
                             <select
                               value={status}
                               onChange={(e) => handleAttendanceChange(student.id, day + 1, e.target.value)}
@@ -583,6 +622,10 @@ const AttendanceTable = () => {
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-amber-100 border-2 border-amber-300 rounded flex items-center justify-center font-bold">½</div>
               <span>Media Falta</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-slate-100 border-2 border-slate-300 rounded"></div>
+              <span>Fin de semana / Día excluido</span>
             </div>
           </div>
         </div>

@@ -142,6 +142,45 @@ const StudentProfile = () => {
     };
   };
 
+  const getAbsentAndHalfAbsentDays = () => {
+    const absentDays = [];
+    const halfAbsentDays = [];
+
+    if (!attendance || attendance.length === 0) {
+      return { absentDays, halfAbsentDays };
+    }
+
+    attendance.forEach(record => {
+      if (record.status === ATTENDANCE_STATUS.ABSENT) {
+        absentDays.push({
+          date: record.date,
+          formattedDate: new Date(record.date + 'T00:00:00').toLocaleDateString('es', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
+        });
+      } else if (record.status === ATTENDANCE_STATUS.HALF_ABSENT) {
+        halfAbsentDays.push({
+          date: record.date,
+          formattedDate: new Date(record.date + 'T00:00:00').toLocaleDateString('es', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
+        });
+      }
+    });
+
+    // Ordenar por fecha descendente
+    absentDays.sort((a, b) => new Date(b.date) - new Date(a.date));
+    halfAbsentDays.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    return { absentDays, halfAbsentDays };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6 flex items-center justify-center">
@@ -441,6 +480,53 @@ const StudentProfile = () => {
           <p className="text-sm text-slate-600 mt-3 text-center font-medium">
             Total de días registrados: {stats.total}
           </p>
+
+          {/* Detalle de Faltas y Medias Faltas */}
+          {(() => {
+            const { absentDays, halfAbsentDays } = getAbsentAndHalfAbsentDays();
+            return (
+              <>
+                {(absentDays.length > 0 || halfAbsentDays.length > 0) && (
+                  <div className="mt-8 pt-6 border-t border-slate-200">
+                    <h3 className="text-lg font-bold text-slate-800 mb-4">📍 Detalle de Ausencias</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Ausencias Completas */}
+                      {absentDays.length > 0 && (
+                        <div className="bg-rose-50 border-2 border-rose-200 rounded-xl p-5">
+                          <h4 className="font-bold text-rose-700 mb-4 flex items-center gap-2">
+                            <span className="text-xl">🔴</span> Faltas Completas ({absentDays.length})
+                          </h4>
+                          <div className="space-y-2 max-h-72 overflow-y-auto">
+                            {absentDays.map((day, idx) => (
+                              <div key={idx} className="bg-white rounded-lg p-3 border border-rose-200 text-sm">
+                                <p className="text-rose-700 font-semibold capitalize">{day.formattedDate}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Medias Faltas */}
+                      {halfAbsentDays.length > 0 && (
+                        <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-5">
+                          <h4 className="font-bold text-amber-700 mb-4 flex items-center gap-2">
+                            <span className="text-xl">🟠</span> Medias Faltas ({halfAbsentDays.length})
+                          </h4>
+                          <div className="space-y-2 max-h-72 overflow-y-auto">
+                            {halfAbsentDays.map((day, idx) => (
+                              <div key={idx} className="bg-white rounded-lg p-3 border border-amber-200 text-sm">
+                                <p className="text-amber-700 font-semibold capitalize">{day.formattedDate}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Materias y Notas */}

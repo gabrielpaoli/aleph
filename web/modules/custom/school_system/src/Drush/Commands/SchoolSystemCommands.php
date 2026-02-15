@@ -123,7 +123,7 @@ class SchoolSystemCommands extends DrushCommands {
     $nombres = ['Lucas', 'Martina', 'Santiago', 'Valentina', 'Mateo', 'Emma', 'Benjamín', 'Isabella', 'Nicolás', 'Mía', 'Sebastián', 'Sofía', 'Joaquín', 'Olivia', 'Tomás', 'Catalina', 'Agustín', 'Emilia', 'Felipe', 'Abril'];
     $apellidos = ['González', 'Rodríguez', 'Martínez', 'López', 'Fernández', 'García', 'Sánchez', 'Romero', 'Torres', 'Díaz', 'Morales', 'Álvarez', 'Gómez', 'Ruiz', 'Pérez', 'Hernández', 'Castro', 'Vargas', 'Silva', 'Ramos'];
 
-    for ($i = 11; $i <= 500; $i++) {
+    for ($i = 11; $i <= 50; $i++) {
       // Buscar curso con espacio disponible
       while ($current_course_index < count($courses) && $courses[$current_course_index]['student_count'] >= $max_students_per_course) {
         $current_course_index++;
@@ -192,6 +192,10 @@ class SchoolSystemCommands extends DrushCommands {
 
     $this->output()->writeln('   Created ' . count($students) . ' parent users');
 
+    // Crear días excluidos PRIMERO (antes de generar asistencias)
+    $this->output()->writeln('📆 Creating excluded dates...');
+    $this->createExcludedDates();
+
     // Crear notas
     $this->output()->writeln('📊 Creating grades...');
 
@@ -207,7 +211,7 @@ class SchoolSystemCommands extends DrushCommands {
       $this->createGrade($students[1]->id(), $all_subjects[1], 9, '2026-03-18');
     }
 
-    // Crear asistencias
+    // Crear asistencias (DESPUÉS de que se hayan creado los días excluidos)
     $this->output()->writeln('📅 Creating attendance records...');
     $this->generateAttendance($students);
 
@@ -551,13 +555,28 @@ class SchoolSystemCommands extends DrushCommands {
     $start_date = new \DateTime('2026-03-01');
     $end_date = new \DateTime('2026-12-31');
 
+    // Load excluded dates
+    $excluded_dates = $this->getExcludedDates();
+    $excluded_date_strings = [];
+    foreach ($excluded_dates as $excluded) {
+      $excluded_date_strings[] = $excluded->get('field_excluded_date')->value;
+    }
+
     $current_date = clone $start_date;
     $count = 0;
 
     while ($current_date <= $end_date) {
       $day_of_week = (int) $current_date->format('N');
+      $date_string = $current_date->format('Y-m-d');
 
+      // Skip weekends (Saturday = 6, Sunday = 7)
       if ($day_of_week >= 6) {
+        $current_date->modify('+1 day');
+        continue;
+      }
+
+      // Skip excluded dates
+      if (in_array($date_string, $excluded_date_strings)) {
         $current_date->modify('+1 day');
         continue;
       }
@@ -574,9 +593,9 @@ class SchoolSystemCommands extends DrushCommands {
 
         $node = Node::create([
           'type' => 'attendance',
-          'title' => 'Attendance ' . $current_date->format('Y-m-d'),
+          'title' => 'Attendance ' . $date_string,
           'field_student_ref' => ['target_id' => $student->id()],
-          'field_date' => $current_date->format('Y-m-d'),
+          'field_date' => $date_string,
           'field_status' => $status,
           'status' => 1,
         ]);
@@ -588,6 +607,79 @@ class SchoolSystemCommands extends DrushCommands {
     }
 
     $this->output()->writeln("   Created $count attendance records");
+  }
+
+  /**
+   * Get all excluded dates.
+   */
+  private function getExcludedDates() {
+    $query = \Drupal::entityQuery('node')
+      ->condition('type', 'excluded_date')
+      ->condition('status', 1)
+      ->accessCheck(FALSE);
+
+    $nids = $query->execute();
+    $excluded_dates = [];
+
+    foreach ($nids as $nid) {
+      $node = Node::load($nid);
+      if ($node) {
+        $excluded_dates[] = $node;
+      }
+    }
+
+    return $excluded_dates;
+  }
+
+  /**
+   * Create excluded dates for the year.
+   */
+  private function createExcludedDates() {
+    $excluded_dates = [
+      ['2026-02-16', 'Carnaval'],
+      ['2026-02-17', 'Carnaval'],
+      ['2026-04-02', 'Malvinas Day'],
+      ['2026-04-10', 'Good Friday'],
+      ['2026-05-01', 'Labour Day'],
+      ['2026-05-25', 'National Day'],
+      ['2026-06-17', 'Flag Day'],
+      ['2026-06-20', 'Winter Solstice'],
+      ['2026-07-09', 'Independence Day'],
+      ['2026-07-10', 'Independence Day (observed)'],
+      ['2026-08-17', 'Death of General San Martín'],
+      ['2026-10-12', 'Discovery Day'],
+      ['2026-11-02', 'All Souls\' Day'],
+      ['2026-12-08', 'Immaculate Conception'],
+      ['2026-12-25', 'Christmas'],
+    ];
+
+    $count = 0;
+    foreach ($excluded_dates as $date_info) {
+      $date = $date_info[0];
+      $reason = $date_info[1];
+
+      // Check if excluded date already exists
+      $query = \Drupal::entityQuery('node')
+        ->condition('type', 'excluded_date')
+        ->condition('field_excluded_date', $date)
+        ->accessCheck(FALSE);
+
+      if ($query->count()->execute() > 0) {
+        continue;
+      }
+
+      $node = Node::create([
+        'type' => 'excluded_date',
+        'title' => 'Excluded: ' . $date,
+        'field_excluded_date' => $date,
+        'field_excluded_reason' => $reason,
+        'status' => 1,
+      ]);
+      $node->save();
+      $count++;
+    }
+
+    $this->output()->writeln("   Created $count excluded dates");
   }
 
 }
