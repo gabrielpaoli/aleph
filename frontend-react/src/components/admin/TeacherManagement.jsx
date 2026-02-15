@@ -32,7 +32,20 @@ const TeacherManagement = () => {
       console.log('📥 Loading teachers...');
       const response = await userService.getTeachers();
       console.log('✅ Teachers loaded:', response);
-      setTeachers(Array.isArray(response.users) ? response.users : []);
+      
+      // Handle both array and object with 'users' property formats
+      let teachersData = [];
+      if (Array.isArray(response)) {
+        teachersData = response;
+      } else if (response && Array.isArray(response.users)) {
+        teachersData = response.users;
+      } else if (response && typeof response === 'object') {
+        // Try to extract an array from the response object
+        teachersData = Object.values(response).find(v => Array.isArray(v)) || [];
+      }
+      
+      console.log('📊 Final teachers data:', teachersData);
+      setTeachers(teachersData);
     } catch (err) {
       console.error('❌ Error loading teachers:', err);
       setError('Error al cargar docentes: ' + (err.response?.data?.error || err.message));

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ATTENDANCE_STATUS } from '../../services/dummyData';
-import { studentService, courseService, subjectService, attendanceService } from '../../services/api';
+import { studentService, courseService, subjectService, attendanceService, noteService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useGrades } from '../../hooks/useGrades';
 
@@ -34,6 +34,7 @@ const StudentProfile = () => {
   const [course, setCourse] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [attendance, setAttendance] = useState([]);
+  const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -102,6 +103,16 @@ const StudentProfile = () => {
         setAttendance(attendanceData);
       } catch (attendanceError) {
         console.warn('⚠️ Error loading attendance:', attendanceError.message);
+      }
+
+      // Cargar notas del estudiante
+      try {
+        console.log('📝 Fetching notes for student:', numericId);
+        const notesData = await noteService.getByStudent(numericId);
+        console.log('✅ Notes loaded:', notesData.length);
+        setNotes(notesData || []);
+      } catch (notesError) {
+        console.warn('⚠️ Error loading notes:', notesError.message);
       }
 
       // Si tenemos al menos calificaciones, es OK
@@ -527,6 +538,49 @@ const StudentProfile = () => {
               </>
             );
           })()}
+        </div>
+
+        {/* Notas de los Profesores */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8 mb-6">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-slate-800">
+            📝 Notas de los Profesores
+          </h2>
+
+          {notes.length === 0 ? (
+            <p className="text-slate-500 text-center py-8">
+              No hay notas registradas para este estudiante
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {notes.map((note, idx) => (
+                <div 
+                  key={note.id || idx} 
+                  className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 sm:p-5 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4 mb-3">
+                    <div>
+                      <h4 className="font-bold text-blue-900 text-lg">{note.title || note.field_title_note}</h4>
+                      <p className="text-sm text-blue-700 mt-1">
+                        👨‍🏫 {note.authorName || 'Profesor desconocido'}
+                      </p>
+                    </div>
+                    <div className="text-sm text-blue-600 font-semibold whitespace-nowrap">
+                      {note.date ? new Date(note.date).toLocaleDateString('es-AR', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }) : 'Sin fecha'}
+                    </div>
+                  </div>
+                  <p className="text-blue-800 leading-relaxed whitespace-pre-wrap break-words">
+                    {note.content || note.field_content_note}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Materias y Notas */}

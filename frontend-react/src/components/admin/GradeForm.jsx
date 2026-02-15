@@ -295,7 +295,7 @@ const GradeForm = () => {
 
   const handleSelectStudent = (student) => {
     setFormData({ ...formData, studentId: student.id });
-    setStudentSearch(`${student.firstName} ${student.lastName}`);
+    setStudentSearch('');
     setFilteredStudentList([]);
     setShowStudentDropdown(false);
   };
@@ -359,16 +359,25 @@ const GradeForm = () => {
               <input
                 type="text"
                 placeholder="Busca por nombre, apellido o email..."
-                value={studentSearch}
+                value={formData.studentId ? getStudentName(formData.studentId) : studentSearch}
                 onChange={(e) => {
-                  setStudentSearch(e.target.value);
+                  const newValue = e.target.value;
+                  setStudentSearch(newValue);
                   // Si el usuario empieza a escribir algo diferente, limpiar la selección anterior
                   // para permitir seleccionar otro estudiante
-                  if (e.target.value.trim().length > 0) {
+                  if (newValue.trim().length > 0) {
                     setFormData({...formData, studentId: ''});
                   }
                 }}
-                onFocus={() => studentSearch.length > 0 && setShowStudentDropdown(true)}
+                onFocus={() => {
+                  if (formData.studentId) {
+                    // Si ya hay un estudiante seleccionado, mostrar el dropdown con opciones
+                    setStudentSearch('');
+                    setShowStudentDropdown(false);
+                  } else if (studentSearch.length > 0) {
+                    setShowStudentDropdown(true);
+                  }
+                }}
                 className="w-full border-2 border-slate-300 p-3 rounded-lg focus:border-indigo-500 focus:outline-none transition-colors"
                 required={!formData.studentId}
                 disabled={submitting}
@@ -396,7 +405,7 @@ const GradeForm = () => {
               )}
 
               {/* Mensaje cuando no hay resultados */}
-              {studentSearchDebounced.length > 0 && !showStudentDropdown && filteredStudentList.length === 0 && (
+              {!formData.studentId && studentSearchDebounced.length > 0 && !showStudentDropdown && filteredStudentList.length === 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border-2 border-slate-300 rounded-lg shadow-lg p-4 text-center text-slate-500">
                   No se encontraron estudiantes
                 </div>

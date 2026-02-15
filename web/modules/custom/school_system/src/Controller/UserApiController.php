@@ -39,10 +39,33 @@ class UserApiController extends ControllerBase {
         foreach ($uids as $uid) {
           $user = User::load($uid);
           if ($user && $user->id() > 0) {
+            // Extract firstName and lastName from name or email
+            $name = $user->getDisplayName();
+            $email = $user->getEmail();
+            
+            $first_name = 'Unknown';
+            $last_name = '';
+            
+            // Try to extract from name first
+            if ($name && $name !== '') {
+              $parts = explode(' ', trim($name));
+              $first_name = $parts[0] ?? 'Unknown';
+              $last_name = implode(' ', array_slice($parts, 1));
+            }
+            // Otherwise try to extract from email
+            else if ($email && $email !== '') {
+              $email_username = explode('@', $email)[0];
+              $parts = explode('.', $email_username);
+              $first_name = $parts[0] ?? 'Unknown';
+              $last_name = $parts[1] ?? '';
+            }
+            
             $user_data = [
               'id' => (int)$user->id(),
-              'name' => $user->getDisplayName(),
-              'email' => $user->getEmail(),
+              'name' => $name,
+              'email' => $email,
+              'firstName' => $first_name,
+              'lastName' => $last_name,
               'roles' => $user->getRoles(),
             ];
 
@@ -61,11 +84,7 @@ class UserApiController extends ControllerBase {
         }
       }
 
-      return new JsonResponse([
-        'success' => TRUE,
-        'users' => $users,
-        'total' => count($users),
-      ]);
+      return new JsonResponse($users);
 
     } catch (\Throwable $e) {
       \Drupal::logger('school_system')->error('getTeachers error: @msg', [

@@ -215,6 +215,10 @@ class SchoolSystemCommands extends DrushCommands {
     $this->output()->writeln('📅 Creating attendance records...');
     $this->generateAttendance($students);
 
+    // Crear notas
+    $this->output()->writeln('📝 Creating dummy notes...');
+    $this->generateNotes($students);
+
     $this->output()->writeln('');
     $this->output()->writeln('✅ Dummy data generated successfully!');
   }
@@ -680,6 +684,84 @@ class SchoolSystemCommands extends DrushCommands {
     }
 
     $this->output()->writeln("   Created $count excluded dates");
+  }
+
+  /**
+   * Generate dummy notes (at least 1 per student, some with 2).
+   */
+  private function generateNotes($students) {
+    $note_subjects = [
+      'Recordatorio de Tarea',
+      'Comportamiento en clase',
+      'Progreso académico',
+      'Asistencia importante',
+      'Participación activa',
+      'Necesita refuerzo',
+      'Excelente trabajo',
+      'Revisar conceptos',
+      'Comunicación importante',
+      'Felicitaciones',
+    ];
+
+    $note_contents = [
+      'Se realizará una evaluación importante el próximo lunes. Por favor, revisa los temas tratados en clase.',
+      'Tu desempeño ha sido excelente. Continúa con ese esfuerzo.',
+      'Necesitas mejorar en la participación en clase. Te animo a que participes más.',
+      'Excelente presentación del proyecto. Muy bien hecho.',
+      'Recordatorio: falta presentar la tarea asignada.',
+      'Necesitamos reunirnos para hablar sobre tu progreso.',
+      'Te has esforzado mucho. Espero que continúes así.',
+      'Falta repasar algunos conceptos de la unidad anterior.',
+      'Muy buena participación en clase hoy.',
+      'Importante: próxima clase habrá control sorpresa.',
+      'Destacada tu dedicación en el trabajo grupal.',
+      'Revisa la ecuación que no comprendiste en clase.',
+    ];
+
+    $count = 0;
+    $users = User::loadMultiple(\Drupal::entityTypeManager()
+      ->getStorage('user')
+      ->getQuery()
+      ->accessCheck(FALSE)
+      ->condition('roles', 'docente')
+      ->execute());
+
+    if (empty($users)) {
+      $this->output()->writeln('   Warning: No docentes found for note creation');
+      return;
+    }
+
+    $docentes = array_values($users);
+
+    foreach ($students as $student) {
+      $student_id = (int) $student->id();
+
+      // Generate 1 or 2 notes per student
+      $num_notes = mt_rand(1, 10) <= 7 ? 1 : 2; // 70% probability of 1 note, 30% of 2 notes
+
+      for ($i = 0; $i < $num_notes; $i++) {
+        $title = $note_subjects[array_rand($note_subjects)];
+        $content = $note_contents[array_rand($note_contents)];
+        $date = $this->getRandomDate('2026-03-01', '2026-12-31');
+        $docente = $docentes[array_rand($docentes)];
+
+        $node = Node::create([
+          'type' => 'note',
+          'title' => $title,
+          'field_title_note' => $title,
+          'field_content_note' => $content,
+          'field_student_ref' => ['target_id' => $student_id],
+          'field_author_ref' => ['target_id' => $docente->id()],
+          'field_date_note' => $date . 'T' . sprintf('%02d:%02d:00', mt_rand(8, 17), mt_rand(0, 59)),
+          'uid' => $docente->id(),
+          'status' => 1,
+        ]);
+        $node->save();
+        $count++;
+      }
+    }
+
+    $this->output()->writeln("   Created $count dummy notes");
   }
 
 }

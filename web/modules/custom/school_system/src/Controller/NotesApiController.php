@@ -13,9 +13,17 @@ use Symfony\Component\HttpFoundation\Request;
 class NotesApiController extends ControllerBase {
 
   /**
-   * Get all notes.
+   * Get all notes with pagination and filters.
    */
   public function getAll(Request $request) {
+    $page = (int) $request->query->get('page', 1);
+    $limit = (int) $request->query->get('limit', 10);
+    $student_id = $request->query->get('studentId');
+    $author_id = $request->query->get('authorId');
+    $course_id = $request->query->get('courseId');
+    $date_from = $request->query->get('dateFrom');
+    $date_to = $request->query->get('dateTo');
+
     $query = \Drupal::entityQuery('node')
       ->condition('type', 'note')
       ->condition('status', 1)
@@ -23,16 +31,39 @@ class NotesApiController extends ControllerBase {
       ->accessCheck(FALSE);
 
     // Filter by student
-    $student_id = $request->query->get('studentId');
     if ($student_id) {
       $query->condition('field_student_ref', $student_id);
     }
 
+    // Filter by author
+    if ($author_id) {
+      $query->condition('field_author_ref', $author_id);
+    }
+
     // Filter by course
-    $course_id = $request->query->get('courseId');
     if ($course_id) {
       $query->condition('field_course_ref', $course_id);
     }
+
+    // Filter by date range
+    if ($date_from) {
+      $query->condition('field_date_note', $date_from, '>=');
+    }
+
+    if ($date_to) {
+      // Add 1 day to include the entire end date
+      $end_date = new \DateTime($date_to);
+      $end_date->modify('+1 day');
+      $query->condition('field_date_note', $end_date->format('Y-m-d\TH:i:s'), '<');
+    }
+
+    // Count total results
+    $count_query = clone $query;
+    $total = $count_query->count()->execute();
+
+    // Apply pagination
+    $offset = ($page - 1) * $limit;
+    $query->range($offset, $limit);
 
     $nids = $query->execute();
     $notes = [];
@@ -44,7 +75,15 @@ class NotesApiController extends ControllerBase {
       }
     }
 
-    return new JsonResponse($notes);
+    $pages = ceil($total / $limit);
+
+    return new JsonResponse([
+      'items' => $notes,
+      'total' => $total,
+      'page' => $page,
+      'limit' => $limit,
+      'pages' => $pages,
+    ]);
   }
 
   /**
@@ -222,12 +261,25 @@ class NotesApiController extends ControllerBase {
    */
   private function formatNote($node) {
     $author = $node->getOwner();
+    $student_name = 'N/A';
+    
+    // Get student name if available
+    $student_id = $node->get('field_student_ref')->target_id;
+    if ($student_id) {
+      $student = Node::load($student_id);
+      if ($student) {
+        $first_name = $student->get('field_first_name')->value ?? '';
+        $last_name = $student->get('field_last_name')->value ?? '';
+        $student_name = trim($first_name . ' ' . $last_name);
+      }
+    }
 
     return [
       'id' => (int) $node->id(),
       'title' => $node->get('field_title_note')->value,
       'content' => $node->get('field_content_note')->value,
-      'studentId' => $node->get('field_student_ref')->target_id,
+      'studentId' => $student_id,
+      'studentName' => $student_name,
       'courseId' => $node->get('field_course_ref')->target_id,
       'authorId' => $node->get('field_author_ref')->target_id,
       'authorName' => $author ? $author->getDisplayName() : '',

@@ -659,6 +659,73 @@ export const userService = {
     }
   },
 
+  getDocentes: async () => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for docentes');
+      return Promise.resolve(
+        dummyData.users
+          .filter(u => u.role === 'docente')
+          .map(u => {
+            // Extraer firstName y lastName del nombre o email
+            let firstName = u.firstName || '';
+            let lastName = u.lastName || '';
+            
+            if (!firstName && !lastName && u.name) {
+              // Si solo tiene nombre completo, dividir por espacio
+              const parts = u.name.split(' ');
+              firstName = parts[0] || 'Unknown';
+              lastName = parts.slice(1).join(' ') || '';
+            } else if (!firstName && !lastName && u.email) {
+              // Si solo tiene email, extraer la parte antes del @
+              const emailParts = u.email.split('@')[0].split('.');
+              firstName = emailParts[0] || 'Unknown';
+              lastName = emailParts[1] || '';
+            }
+            
+            return {
+              id: u.id,
+              firstName: firstName || 'Unknown',
+              lastName: lastName || '',
+              name: `${firstName} ${lastName}`.trim(),
+            };
+          })
+      );
+    }
+    console.log('🌐 Fetching docentes from API');
+    try {
+      const response = await api.get('/api/users/role/docente');
+      console.log('✅ Docentes:', response.data);
+      
+      // Si devuelve structure con 'users'
+      const docentes = response.data.users || response.data;
+      
+      return (Array.isArray(docentes) ? docentes : []).map(u => {
+        let firstName = u.firstName || '';
+        let lastName = u.lastName || '';
+        
+        if (!firstName && !lastName && u.name) {
+          const parts = u.name.split(' ');
+          firstName = parts[0] || 'Unknown';
+          lastName = parts.slice(1).join(' ') || '';
+        } else if (!firstName && !lastName && u.email) {
+          const emailParts = u.email.split('@')[0].split('.');
+          firstName = emailParts[0] || 'Unknown';
+          lastName = emailParts[1] || '';
+        }
+        
+        return {
+          id: u.id,
+          firstName: firstName || 'Unknown',
+          lastName: lastName || '',
+          name: `${firstName} ${lastName}`.trim(),
+        };
+      });
+    } catch (error) {
+      console.error('❌ Error fetching docentes:', error);
+      throw error;
+    }
+  },
+
   updateRole: async (userId, role) => {
     if (USE_DUMMY_DATA) {
       const user = dummyData.users.find(u => u.id === userId);
@@ -849,8 +916,83 @@ export const noteService = {
       console.error('❌ Error fetching course notes:', error);
       throw error;
     }
+  },
+
+  getAllWithPagination: async (params = {}) => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Using dummy data for notes (paginated)');
+      let notes = dummyData.notes || [];
+      
+      // Filter by student
+      if (params.studentId) {
+        notes = notes.filter(n => n.studentId === params.studentId);
+      }
+      
+      // Filter by author
+      if (params.authorId) {
+        notes = notes.filter(n => n.authorId === params.authorId);
+      }
+      
+      // Filter by date range
+      if (params.dateFrom) {
+        notes = notes.filter(n => new Date(n.date) >= new Date(params.dateFrom));
+      }
+      if (params.dateTo) {
+        const endDate = new Date(params.dateTo);
+        endDate.setDate(endDate.getDate() + 1);
+        notes = notes.filter(n => new Date(n.date) < endDate);
+      }
+      
+      // Sort by date descending
+      notes.sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      // Pagination
+      const page = params.page || 1;
+      const limit = params.limit || 10;
+      const total = notes.length;
+      const pages = Math.ceil(total / limit);
+      const offset = (page - 1) * limit;
+      const items = notes.slice(offset, offset + limit);
+      
+      return Promise.resolve({
+        items,
+        total,
+        page,
+        limit,
+        pages,
+      });
+    }
+    
+    console.log('🌐 Fetching notes with pagination:', params);
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('page', params.page || 1);
+      queryParams.append('limit', params.limit || 10);
+      
+      if (params.studentId) {
+        queryParams.append('studentId', params.studentId);
+      }
+      if (params.authorId) {
+        queryParams.append('authorId', params.authorId);
+      }
+      if (params.dateFrom) {
+        queryParams.append('dateFrom', params.dateFrom);
+      }
+      if (params.dateTo) {
+        queryParams.append('dateTo', params.dateTo);
+      }
+      
+      queryParams.append('_t', Date.now());
+      
+      const response = await api.get(`/api/notes?${queryParams.toString()}`);
+      console.log('✅ Notes from API (paginated):', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching notes:', error);
+      throw error;
+    }
   }
-};
+}
 
 // ============ EXCLUDED DATES ============
 export const excludedDateService = {
