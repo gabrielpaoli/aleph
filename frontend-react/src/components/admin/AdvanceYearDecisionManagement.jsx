@@ -18,6 +18,9 @@ const AdvanceYearDecisionManagement = () => {
   const [academicYear, setAcademicYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [closeConfirmText, setCloseConfirmText] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -161,6 +164,28 @@ const AdvanceYearDecisionManagement = () => {
     }
   };
 
+  const handleCloseYear = async () => {
+    try {
+      setClosing(true);
+      setError('');
+      setSuccess('');
+
+      await advanceYearDecisionService.closeAcademicYear(academicYear);
+      setSuccess('Ano lectivo cerrado correctamente');
+      setShowCloseModal(false);
+      setCloseConfirmText('');
+      if (selectedCourseId) {
+        await loadCourseData(selectedCourseId, academicYear);
+      }
+    } catch (err) {
+      console.error('Error closing academic year:', err);
+      const apiError = err.response?.data?.error || 'No se pudo cerrar el ano lectivo';
+      setError(apiError);
+    } finally {
+      setClosing(false);
+    }
+  };
+
   const getStudentName = (student) => `${student.firstName} ${student.lastName}`;
 
   const getNextCourseIdFor = (currentCourseId) => {
@@ -219,13 +244,22 @@ const AdvanceYearDecisionManagement = () => {
           </div>
 
           <div className="flex items-end">
-            <button
-              onClick={handleSave}
-              disabled={saving || students.length === 0}
-              className="w-full px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? 'Guardando...' : 'Guardar decisiones'}
-            </button>
+            <div className="w-full flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={handleSave}
+                disabled={saving || students.length === 0}
+                className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? 'Guardando...' : 'Guardar decisiones'}
+              </button>
+              <button
+                onClick={() => setShowCloseModal(true)}
+                disabled={closing}
+                className="px-4 py-2 bg-rose-600 text-white font-semibold rounded-lg hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {closing ? 'Cerrando...' : 'Cerrar el ano lectivo'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -298,6 +332,48 @@ const AdvanceYearDecisionManagement = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {showCloseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
+            <h3 className="text-xl font-bold text-slate-800 mb-2">
+              Confirmar cierre del ano lectivo
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Esta accion elimina todas las faltas, notas y registros asociados a cada estudiante.
+              Tambien actualiza el curso segun la promocion y elimina estudiantes egresados.
+            </p>
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg p-3 mb-4">
+              Para continuar, escribe CERRAR en el campo de abajo.
+            </div>
+            <input
+              type="text"
+              value={closeConfirmText}
+              onChange={(e) => setCloseConfirmText(e.target.value)}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 mb-4"
+              placeholder="Escribe CERRAR"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowCloseModal(false);
+                  setCloseConfirmText('');
+                }}
+                className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCloseYear}
+                disabled={closing || closeConfirmText !== 'CERRAR'}
+                className="px-4 py-2 rounded-lg bg-rose-600 text-white font-semibold hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {closing ? 'Cerrando...' : 'Confirmar cierre'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

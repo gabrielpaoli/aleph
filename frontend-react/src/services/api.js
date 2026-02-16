@@ -1160,6 +1160,17 @@ export const advanceYearDecisionService = {
     const response = await api.post('/api/advance-year-decisions', { items });
     return response.data;
   },
+
+  closeAcademicYear: async (academicYear) => {
+    if (USE_DUMMY_DATA) {
+      return Promise.resolve({ success: true });
+    }
+
+    const response = await api.post('/api/advance-year-decisions/close-year', {
+      academicYear,
+    });
+    return response.data;
+  },
 };
 
 // ============ EXCLUDED DATES ============
