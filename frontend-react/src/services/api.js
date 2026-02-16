@@ -456,6 +456,79 @@ export const gradeService = {
   }
 };
 
+// ============ PERIOD GRADES (Trimestres y Final) ============
+export const periodGradeService = {
+  getAll: async (filters = {}) => {
+    if (USE_DUMMY_DATA) {
+      return Promise.resolve([]);
+    }
+    const params = new URLSearchParams({ _t: String(Date.now()) });
+
+    if (filters.studentId) params.set('studentId', String(filters.studentId));
+    if (filters.subjectId) params.set('subjectId', String(filters.subjectId));
+    if (filters.academicYear) params.set('academicYear', String(filters.academicYear));
+
+    const response = await api.get(`/api/period-grades?${params.toString()}`);
+    return response.data;
+  },
+
+  getByStudentAndSubject: async (studentId, subjectId, academicYear) => {
+    if (USE_DUMMY_DATA) {
+      return Promise.resolve(null);
+    }
+    const response = await api.get(`/api/period-grades?studentId=${studentId}&subjectId=${subjectId}&academicYear=${academicYear}&_t=${Date.now()}`);
+    return response.data && response.data.length > 0 ? response.data[0] : null;
+  },
+
+  create: async (periodGradeData) => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Creating dummy period grade:', periodGradeData);
+      return Promise.resolve({ ...periodGradeData, id: Date.now() });
+    }
+    console.log('🌐 Creating period grade via API:', periodGradeData);
+    try {
+      const response = await api.post('/api/period-grades', periodGradeData);
+      console.log('✅ Period grade created:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error creating period grade:', error);
+      throw error;
+    }
+  },
+
+  update: async (id, periodGradeData) => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Updating dummy period grade:', id, periodGradeData);
+      return Promise.resolve({ ...periodGradeData, id });
+    }
+    console.log('🌐 Updating period grade via API:', id, periodGradeData);
+    try {
+      const response = await api.patch(`/api/period-grades/${id}`, periodGradeData);
+      console.log('✅ Period grade updated:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error updating period grade:', error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    if (USE_DUMMY_DATA) {
+      console.log('📦 Deleting dummy period grade:', id);
+      return Promise.resolve({ success: true });
+    }
+    console.log('🌐 Deleting period grade via API:', id);
+    try {
+      const response = await api.delete(`/api/period-grades/${id}`);
+      console.log('✅ Period grade deleted:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error deleting period grade:', error);
+      throw error;
+    }
+  }
+};
+
 // src/services/api.js
 
 // ============ AUTENTICACIÓN ============

@@ -77,6 +77,10 @@ function _school_system_create_content_types() {
       'name' => 'Advance Year Decision',
       'description' => 'Decision manual de avance de ano',
     ],
+    'period_grade' => [
+      'name' => 'Period Grade',
+      'description' => 'Notas de cierre de trimestres y final',
+    ],
   ];
 
   foreach ($types as $type_id => $type_info) {
@@ -236,6 +240,41 @@ function _school_system_create_fields() {
     ],
   ]);
   _school_system_create_field('node', 'advance_year_decision', 'field_academic_year', 'integer', 'Academic Year', FALSE);
+
+  // ========== PERIOD GRADE FIELDS ==========
+  _school_system_create_field('node', 'period_grade', 'field_student_ref', 'entity_reference', 'Student', FALSE, [
+    'target_type' => 'node',
+    'handler_settings' => ['target_bundles' => ['student' => 'student']],
+  ]);
+  _school_system_create_field('node', 'period_grade', 'field_subject_ref', 'entity_reference', 'Subject', FALSE, [
+    'target_type' => 'node',
+    'handler_settings' => ['target_bundles' => ['subject' => 'subject']],
+  ]);
+  _school_system_create_field('node', 'period_grade', 'field_academic_year', 'integer', 'Academic Year', FALSE);
+  _school_system_create_field('node', 'period_grade', 'field_trimester_1', 'decimal', 'Trimestre 1', FALSE, [
+    'precision' => 4,
+    'scale' => 2,
+  ]);
+  _school_system_create_field('node', 'period_grade', 'field_trimester_2', 'decimal', 'Trimestre 2', FALSE, [
+    'precision' => 4,
+    'scale' => 2,
+  ]);
+  _school_system_create_field('node', 'period_grade', 'field_trimester_3', 'decimal', 'Trimestre 3', FALSE, [
+    'precision' => 4,
+    'scale' => 2,
+  ]);
+  _school_system_create_field('node', 'period_grade', 'field_final_grade', 'decimal', 'Nota Final', FALSE, [
+    'precision' => 4,
+    'scale' => 2,
+  ]);
+  _school_system_create_field('node', 'period_grade', 'field_recuperatorio_diciembre', 'decimal', 'Recuperatorio Diciembre', FALSE, [
+    'precision' => 4,
+    'scale' => 2,
+  ]);
+  _school_system_create_field('node', 'period_grade', 'field_recuperatorio_febrero', 'decimal', 'Recuperatorio Febrero', FALSE, [
+    'precision' => 4,
+    'scale' => 2,
+  ]);
 }
 
 /**

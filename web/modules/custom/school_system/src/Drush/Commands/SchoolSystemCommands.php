@@ -32,10 +32,10 @@ class SchoolSystemCommands extends DrushCommands {
     // Limpiar datos existentes
     $this->cleanExistingData();
 
-    // Crear cursos suficientes para 500 estudiantes (máximo 24 por curso)
+    // Crear cursos suficientes para 50 estudiantes (máximo 24 por curso)
     $this->output()->writeln('📖 Creating courses...');
     $max_students_per_course = 24;
-    $total_students = 500;
+    $total_students = 50;
     $courses_needed = ceil($total_students / $max_students_per_course); // Aproximadamente 21 cursos
     
     $courses = [];
@@ -259,8 +259,8 @@ class SchoolSystemCommands extends DrushCommands {
     $this->createUser('padre.romero@email.com', '1234', 'parent');
     $this->createUser('padre.torres@email.com', '1234', 'parent');
 
-    // Generar 490 usuarios de padres adicionales (del 11 al 500)
-    for ($i = 11; $i <= 500; $i++) {
+    // Generar 490 usuarios de padres adicionales (del 11 al 50)
+    for ($i = 11; $i <= 50; $i++) {
       $email = "padre.estudiante{$i}@email.com";
       $this->createUser($email, '1234', 'parent');
     }
@@ -275,7 +275,7 @@ class SchoolSystemCommands extends DrushCommands {
     $this->output()->writeln('   - directivo@escuela1.com (directivo)');
     $this->output()->writeln('   - roberto.diaz@escuela1.com (docente)');
     $this->output()->writeln('   - laura.morales@escuela1.com (docente)');
-    $this->output()->writeln('   - 500 parent users (padre.*)');
+    $this->output()->writeln('   - 50 parent users (padre.*)');
     $this->output()->writeln('');
     $this->output()->writeln('🔑 All passwords: 1234');
   }

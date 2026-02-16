@@ -222,6 +222,39 @@ school_system.api.grade.delete:
   requirements:
     _access: 'TRUE'
 
+# Period Grades (Trimestres)
+school_system.api.period_grades:
+  path: '/api/period-grades'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\PeriodGradeApiController::getAll'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.period_grade.create:
+  path: '/api/period-grades'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\PeriodGradeApiController::createPeriodGrade'
+  methods: [POST]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.period_grade.update:
+  path: '/api/period-grades/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\PeriodGradeApiController::update'
+  methods: [PATCH]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.period_grade.delete:
+  path: '/api/period-grades/{id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\PeriodGradeApiController::delete'
+  methods: [DELETE]
+  requirements:
+    _access: 'TRUE'
+
 # Notifications
 school_system.api.notifications.absence:
   path: '/api/notifications/absence'

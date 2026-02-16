@@ -5,7 +5,7 @@ import StudentForm from './StudentForm';
 import CourseForm from './CourseForm';
 import SubjectForm from './SubjectForm';
 import TeacherManagement from './TeacherManagement';
-import GradeForm from './GradeForm';
+import GradeManagement from './GradeManagement';
 import UserManagement from './UserManagement';
 import NoteForm from './NoteForm';
 
@@ -16,7 +16,7 @@ const AdminPanel = () => {
     { id: 'students', label: 'Estudiantes', icon: '👨‍🎓', component: StudentForm },
     { id: 'courses', label: 'Cursos', icon: '📚', component: CourseForm },
     { id: 'subjects', label: 'Materias', icon: '📖', component: SubjectForm },
-    { id: 'grades', label: 'Calificaciones', icon: '⭐', component: GradeForm },
+    { id: 'grades', label: 'Calificaciones', icon: '⭐', component: GradeManagement },
     { id: 'teachers', label: 'Docentes', icon: '👨‍🏫', component: TeacherManagement },
     { id: 'users', label: 'Usuarios', icon: '👥', component: UserManagement },
     { id: 'notes', label: 'Notas', icon: '📝', component: NoteForm }
