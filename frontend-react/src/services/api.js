@@ -1114,6 +1114,54 @@ export const subjectEnrollmentService = {
   },
 };
 
+// ============ ADVANCE YEAR DECISIONS ============
+export const advanceYearDecisionService = {
+  getByCourse: async (courseId, academicYear) => {
+    if (USE_DUMMY_DATA) {
+      const year = Number(academicYear);
+      return Promise.resolve(
+        (dummyData.advanceYearDecisions || []).filter(
+          (item) => item.currentCourseId === courseId && item.academicYear === year
+        )
+      );
+    }
+
+    const params = new URLSearchParams({
+      academicYear: String(academicYear),
+      _t: String(Date.now()),
+    });
+    const response = await api.get(`/api/advance-year-decisions/course/${courseId}?${params.toString()}`);
+    return response.data;
+  },
+
+  upsert: async (items) => {
+    if (USE_DUMMY_DATA) {
+      dummyData.advanceYearDecisions = dummyData.advanceYearDecisions || [];
+      items.forEach((item) => {
+        const existing = dummyData.advanceYearDecisions.find(
+          (decision) =>
+            decision.studentId === item.studentId &&
+            decision.academicYear === item.academicYear
+        );
+        if (existing) {
+          existing.action = item.action;
+          existing.currentCourseId = item.currentCourseId;
+          existing.nextCourseId = item.nextCourseId || null;
+        } else {
+          dummyData.advanceYearDecisions.push({
+            ...item,
+            id: Date.now() + Math.random(),
+          });
+        }
+      });
+      return Promise.resolve({ success: true });
+    }
+
+    const response = await api.post('/api/advance-year-decisions', { items });
+    return response.data;
+  },
+};
+
 // ============ EXCLUDED DATES ============
 export const excludedDateService = {
   getAll: async (page = 1, limit = 50) => {
