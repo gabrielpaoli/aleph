@@ -1,0 +1,5 @@
+services:
+  school_system.drush_commands:
+    class: Drupal\school_system\Commands\MyModuleCommands
+    tags:
+      - { name: drush.command }

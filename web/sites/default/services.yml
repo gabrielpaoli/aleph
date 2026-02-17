@@ -1,0 +1,17 @@
+# web/sites/default/services.yml
+
+parameters:
+  session.storage.options:
+    cookie_lifetime: 2000000
+    cookie_samesite: 'None'
+    cookie_secure: false
+    cookie_httponly: false
+
+  cors.config:
+    enabled: true
+    allowedOrigins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5173', '*']
+    allowedMethods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS']
+    allowedHeaders: ['*']
+    exposedHeaders: false
+    maxAge: 3600
+    supportsCredentials: true
