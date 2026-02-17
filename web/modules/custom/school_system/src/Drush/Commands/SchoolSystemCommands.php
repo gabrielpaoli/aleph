@@ -32,14 +32,14 @@ class SchoolSystemCommands extends DrushCommands {
     // Limpiar datos existentes
     $this->cleanExistingData();
 
-    // Crear cursos suficientes para 50 estudiantes (máximo 24 por curso)
+    // Crear cursos suficientes para 1000 estudiantes (máximo 24 por curso)
     $this->output()->writeln('📖 Creating courses...');
     $max_students_per_course = 24;
-    $total_students = 50;
-    $courses_needed = ceil($total_students / $max_students_per_course); // Aproximadamente 21 cursos
+    $total_students = 1000;
+    $courses_needed = ceil($total_students / $max_students_per_course);
     
     $courses = [];
-    $course_letters = ['A', 'B'];
+    $course_letters = ['A', 'B', 'C', 'D'];
     $shifts = ['Mañana', 'Tarde', 'Noche'];
     $course_index = 0;
 
@@ -71,10 +71,10 @@ class SchoolSystemCommands extends DrushCommands {
     $subject_names = ['Matemáticas', 'Lengua', 'Historia', 'Geografía', 'Inglés', 'Ciencias Naturales', 'Física', 'Química'];
     $all_subjects = [];
     
-    // Crear materias para los primeros 4 cursos
-    for ($i = 0; $i < min(4, count($courses)); $i++) {
+    // Crear materias para todos los cursos
+    foreach ($courses as $course) {
       foreach ($subject_names as $subject_name) {
-        $all_subjects[] = $this->createSubject($subject_name, $courses[$i]['id']);
+        $all_subjects[] = $this->createSubject($subject_name, $course['id']);
       }
     }
     
@@ -119,11 +119,11 @@ class SchoolSystemCommands extends DrushCommands {
       $courses[$current_course_index]['student_count']++;
     }
 
-    // Generar 490 estudiantes adicionales
+    // Generar 990 estudiantes adicionales
     $nombres = ['Lucas', 'Martina', 'Santiago', 'Valentina', 'Mateo', 'Emma', 'Benjamín', 'Isabella', 'Nicolás', 'Mía', 'Sebastián', 'Sofía', 'Joaquín', 'Olivia', 'Tomás', 'Catalina', 'Agustín', 'Emilia', 'Felipe', 'Abril'];
     $apellidos = ['González', 'Rodríguez', 'Martínez', 'López', 'Fernández', 'García', 'Sánchez', 'Romero', 'Torres', 'Díaz', 'Morales', 'Álvarez', 'Gómez', 'Ruiz', 'Pérez', 'Hernández', 'Castro', 'Vargas', 'Silva', 'Ramos'];
 
-    for ($i = 11; $i <= 50; $i++) {
+    for ($i = 11; $i <= $total_students; $i++) {
       // Buscar curso con espacio disponible
       while ($current_course_index < count($courses) && $courses[$current_course_index]['student_count'] >= $max_students_per_course) {
         $current_course_index++;
@@ -353,9 +353,13 @@ class SchoolSystemCommands extends DrushCommands {
           return;
         }
 
-        // Delete related content
+        // Delete attendance from custom table.
+        \Drupal::database()->delete('school_system_attendance')
+          ->condition('student_id', (int) $student_id)
+          ->execute();
+
+        // Delete related node-based content
         $types = [
-          'attendance',
           'grade',
           'period_grade',
           'note',
@@ -645,7 +649,6 @@ class SchoolSystemCommands extends DrushCommands {
       'student' => 'Students',
       'teacher' => 'Teachers',
       'grade' => 'Grades',
-      'attendance' => 'Attendance Records',
       'note' => 'Notes',
     ];
 
@@ -656,11 +659,22 @@ class SchoolSystemCommands extends DrushCommands {
       $count = $query->count()->execute();
       $this->output()->writeln("   $label: $count");
     }
+
+    // Attendance from custom table.
+    $att_count = (int) \Drupal::database()
+      ->select('school_system_attendance', 'a')
+      ->countQuery()
+      ->execute()
+      ->fetchField();
+    $this->output()->writeln("   Attendance Records: $att_count");
   }
 
   // Métodos privados helper
   private function cleanExistingData() {
-    $types = ['attendance', 'grade', 'note', 'student', 'teacher', 'subject', 'course'];
+    // Truncate custom attendance table.
+    \Drupal::database()->truncate('school_system_attendance')->execute();
+
+    $types = ['grade', 'note', 'student', 'teacher', 'subject', 'course'];
 
     foreach ($types as $type) {
       $query = \Drupal::entityQuery('node')
@@ -806,8 +820,10 @@ class SchoolSystemCommands extends DrushCommands {
       $excluded_date_strings[] = $excluded->get('field_excluded_date')->value;
     }
 
+    $db = \Drupal::database();
     $current_date = clone $start_date;
     $count = 0;
+    $now = time();
 
     while ($current_date <= $end_date) {
       $day_of_week = (int) $current_date->format('N');
@@ -835,15 +851,16 @@ class SchoolSystemCommands extends DrushCommands {
           $status = 'half_absent';
         }
 
-        $node = Node::create([
-          'type' => 'attendance',
-          'title' => 'Attendance ' . $date_string,
-          'field_student_ref' => ['target_id' => $student->id()],
-          'field_date' => $date_string,
-          'field_status' => $status,
-          'status' => 1,
-        ]);
-        $node->save();
+        $db->merge('school_system_attendance')
+          ->keys([
+            'student_id' => (int) $student->id(),
+            'date' => $date_string,
+          ])
+          ->fields([
+            'status' => $status,
+            'created' => $now,
+          ])
+          ->execute();
         $count++;
       }
 

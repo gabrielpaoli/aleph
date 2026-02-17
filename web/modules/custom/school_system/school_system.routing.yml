@@ -171,7 +171,7 @@ school_system.api.attendance.create:
     _controller: '\Drupal\school_system\Controller\AttendanceApiController::createAttendance'
   methods: [POST]
   requirements:
-    _permission: 'create attendance content'
+    _permission: 'access content'
 
 school_system.api.attendance.update:
   path: '/api/attendance/{id}'
@@ -179,7 +179,7 @@ school_system.api.attendance.update:
     _controller: '\Drupal\school_system\Controller\AttendanceApiController::update'
   methods: [PATCH]
   requirements:
-    _permission: 'edit any attendance content'
+    _permission: 'access content'
 
 school_system.api.attendance.bulk:
   path: '/api/attendance/bulk'
@@ -187,7 +187,7 @@ school_system.api.attendance.bulk:
     _controller: '\Drupal\school_system\Controller\AttendanceApiController::bulkUpdate'
   methods: [POST]
   requirements:
-    _permission: 'edit any attendance content'
+    _permission: 'access content'
 
 # Grades
 school_system.api.grades:

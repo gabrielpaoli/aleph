@@ -11,6 +11,57 @@ use Drupal\field\Entity\FieldConfig;
 use Drupal\Core\Field\BaseFieldDefinition;
 
 /**
+ * Implements hook_schema().
+ */
+function school_system_schema() {
+  $schema['school_system_attendance'] = [
+    'description' => 'Lightweight attendance records (replaces attendance nodes).',
+    'fields' => [
+      'id' => [
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'student_id' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Node ID of the student.',
+      ],
+      'date' => [
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'description' => 'Date in YYYY-MM-DD format.',
+      ],
+      'status' => [
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => 'present',
+        'description' => 'present, absent, half_absent.',
+      ],
+      'created' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Unix timestamp of creation.',
+      ],
+    ],
+    'primary key' => ['id'],
+    'unique keys' => [
+      'student_date' => ['student_id', 'date'],
+    ],
+    'indexes' => [
+      'student_id' => ['student_id'],
+      'date' => ['date'],
+      'status' => ['status'],
+    ],
+  ];
+  return $schema;
+}
+
+/**
  * Implements hook_install().
  */
 function school_system_install() {
