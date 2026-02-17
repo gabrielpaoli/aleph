@@ -420,6 +420,14 @@ school_system.api.advance_year_decisions.close_year:
   requirements:
     _access: 'TRUE'
 
+school_system.api.advance_year_decisions.job_status:
+  path: '/api/advance-year-decisions/job/{job_id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\AdvanceYearDecisionApiController::jobStatus'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
 # Teachers (legacy - from Teacher nodes)
 school_system.api.teachers:
   path: '/api/teachers'

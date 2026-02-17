@@ -24,10 +24,42 @@ const AdvanceYearDecisionManagement = () => {
   const [closeConfirmText, setCloseConfirmText] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
+  const progressTimerRef = React.useRef(null);
 
   useEffect(() => {
     loadCourses();
   }, []);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (progressTimerRef.current) {
+        progressTimerRef.current.cancel();
+        progressTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Warn user if they try to close/refresh the page while progress modal is open
+  useEffect(() => {
+    const beforeUnloadHandler = (e) => {
+      if (!showProgressModal) return;
+      const message = 'El proceso de cierre está en curso. No cierre ni actualice el navegador hasta que termine.';
+      e.preventDefault();
+      e.returnValue = message;
+      return message;
+    };
+
+    if (showProgressModal) {
+      window.addEventListener('beforeunload', beforeUnloadHandler);
+    }
+    return () => {
+      window.removeEventListener('beforeunload', beforeUnloadHandler);
+    };
+  }, [showProgressModal]);
 
   useEffect(() => {
     if (selectedCourseId) {
@@ -126,6 +158,22 @@ const AdvanceYearDecisionManagement = () => {
     setDraggedStudentId(null);
   };
 
+  const handleMoveAll = (actionValue) => {
+    const defaultNextCourseId = actionValue === 'promote'
+      ? getNextCourseIdFor(Number(selectedCourseId))
+      : '';
+    const nextDecisions = {};
+    students.forEach((student) => {
+      nextDecisions[student.id] = {
+        action: actionValue,
+        nextCourseId: actionValue === 'promote' ? defaultNextCourseId : '',
+      };
+    });
+    setDecisions(nextDecisions);
+    const label = actionValue === 'promote' ? 'Pasa de ano' : (actionValue === 'retain' ? 'Repite' : (actionValue === 'graduate' ? 'Egreso' : 'Cursando'));
+    setSuccess(`Todos los estudiantes marcados como ${label}`);
+  };
+
   const handleSelectNextCourse = (studentId, value) => {
     setDecision(studentId, { nextCourseId: value });
   };
@@ -179,19 +227,84 @@ const AdvanceYearDecisionManagement = () => {
       setError('');
       setSuccess('');
 
-      await advanceYearDecisionService.closeAcademicYear(academicYear);
-      setSuccess('Ano lectivo cerrado correctamente');
-      setShowCloseModal(false);
-      setCloseConfirmText('');
-      if (selectedCourseId) {
-        await loadCourseData(selectedCourseId, academicYear);
+      // Start job on server
+      const resp = await advanceYearDecisionService.closeAcademicYear(academicYear);
+      const jobId = resp?.jobId;
+      if (!jobId) {
+        setError('No se pudo iniciar el proceso de cierre');
+        setClosing(false);
+        return;
       }
+
+      setProgressPercent(0);
+      setProgressMessage('Iniciando cierre del año lectivo...');
+      setShowCloseModal(false);
+      setShowProgressModal(true);
+
+      // Sequential polling – each poll triggers backend work AND waits for the
+      // response before scheduling the next poll to avoid double-processing.
+      let cancelled = false;
+      progressTimerRef.current = { cancel: () => { cancelled = true; } };
+
+      const poll = async () => {
+        if (cancelled) return;
+        try {
+          const status = await advanceYearDecisionService.getJobStatus(jobId);
+          if (cancelled || !status) return;
+
+          const total = Number(status.total) || 0;
+          const processed = Number(status.processed) || 0;
+          const percent = total > 0 ? Math.round((processed / total) * 100) : (status.status === 'finished' ? 100 : 0);
+          setProgressPercent(percent);
+          setProgressMessage(status.message || (status.status === 'running' ? 'Procesando estudiantes...' : 'Finalizado'));
+
+          if (status.status === 'finished') {
+            progressTimerRef.current = null;
+            setProgressPercent(100);
+            setProgressMessage('Cierre finalizado. Aplicando cambios...');
+            setTimeout(async () => {
+              setShowProgressModal(false);
+              setShowCloseModal(false);
+              setCloseConfirmText('');
+              setSuccess('Ano lectivo cerrado correctamente');
+              if (selectedCourseId) {
+                await loadCourseData(selectedCourseId, academicYear);
+              }
+              setClosing(false);
+            }, 800);
+            return;
+          }
+
+          if (status.status === 'error') {
+            progressTimerRef.current = null;
+            setShowProgressModal(false);
+            setError(status.message || 'Error durante el cierre del ano');
+            setClosing(false);
+            return;
+          }
+
+          // Schedule next poll after a short delay (sequential, not interval).
+          setTimeout(poll, 300);
+        } catch (e) {
+          console.error('Error polling job status', e);
+          if (!cancelled) setTimeout(poll, 1000);
+        }
+      };
+
+      // Kick off the first poll immediately.
+      poll();
     } catch (err) {
       console.error('Error closing academic year:', err);
-      const apiError = err.response?.data?.error || 'No se pudo cerrar el ano lectivo';
+      if (progressTimerRef.current) {
+        progressTimerRef.current.cancel();
+        progressTimerRef.current = null;
+      }
+      setProgressPercent(0);
+      setShowProgressModal(false);
+      const apiError = err?.response?.data?.error || err?.message || 'No se pudo cerrar el ano lectivo';
       setError(apiError);
     } finally {
-      setClosing(false);
+      // setClosing managed in polling completion
     }
   };
 
@@ -227,7 +340,7 @@ const AdvanceYearDecisionManagement = () => {
       <h2 className="text-2xl font-bold text-slate-800 mb-6">📌 Promocion de Estudiantes</h2>
 
       <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Curso</label>
             <select
@@ -254,20 +367,24 @@ const AdvanceYearDecisionManagement = () => {
               max="2100"
             />
           </div>
-
           <div className="flex items-end">
-            <div className="w-full flex flex-col sm:flex-row gap-2">
+            <div className="w-full">
               <button
                 onClick={handleSave}
                 disabled={saving || students.length === 0}
-                className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? 'Guardando...' : 'Guardar decisiones'}
               </button>
+            </div>
+          </div>
+
+          <div className="flex items-end">
+            <div className="w-full">
               <button
                 onClick={() => setShowCloseModal(true)}
                 disabled={closing || hasCursando}
-                className="px-4 py-2 bg-rose-600 text-white font-semibold rounded-lg hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2 bg-rose-600 text-white font-semibold rounded-lg hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {closing ? 'Cerrando...' : 'Cerrar el ano lectivo'}
               </button>
@@ -291,7 +408,7 @@ const AdvanceYearDecisionManagement = () => {
       {loading ? (
         <div className="text-center py-8">Cargando...</div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {ACTION_COLUMNS.map((column) => {
             const columnStudents = students.filter(
               (student) => getDecisionForStudent(student.id).action === column.value
@@ -304,7 +421,16 @@ const AdvanceYearDecisionManagement = () => {
                 onDrop={() => handleDrop(column.value)}
                 className={`rounded-xl border-2 ${column.color} p-4 min-h-[300px]`}
               >
-                <h3 className="text-lg font-bold text-slate-700 mb-3">{column.label}</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-bold text-slate-700">{column.label}</h3>
+                  <button
+                    onClick={() => handleMoveAll(column.value)}
+                    disabled={students.length === 0}
+                    className="text-sm px-2 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Pasar todos
+                  </button>
+                </div>
                 {columnStudents.length === 0 ? (
                   <div className="text-sm text-slate-500">Arrastra estudiantes aqui</div>
                 ) : (
@@ -388,6 +514,43 @@ const AdvanceYearDecisionManagement = () => {
                 className="px-4 py-2 rounded-lg bg-rose-600 text-white font-semibold hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {closing ? 'Cerrando...' : 'Confirmar cierre'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showProgressModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Cierre del año lectivo</h3>
+            <p className="text-sm text-slate-600 mb-4">{progressMessage}</p>
+
+            <div className="mb-3">
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg p-2">
+                <strong>Atención:</strong> No cerrar ni actualizar el navegador hasta que finalice el proceso.
+              </div>
+            </div>
+
+            <div className="w-full bg-slate-100 rounded-full h-3 mb-3 overflow-hidden">
+              <div
+                className="h-full bg-indigo-600 transition-all"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-slate-500">
+              <div>{progressPercent}%</div>
+              <div>{closing ? 'En progreso' : ''}</div>
+            </div>
+
+            <div className="mt-4 text-right">
+              <button
+                onClick={() => {
+                  if (!closing) setShowProgressModal(false);
+                }}
+                className="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100"
+                disabled={closing}
+              >
+                Cerrar
               </button>
             </div>
           </div>

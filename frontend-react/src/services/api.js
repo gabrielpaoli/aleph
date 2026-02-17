@@ -1183,10 +1183,17 @@ export const advanceYearDecisionService = {
     if (USE_DUMMY_DATA) {
       return Promise.resolve({ success: true });
     }
-
     const response = await api.post('/api/advance-year-decisions/close-year', {
       academicYear,
     });
+    return response.data;
+  },
+
+  getJobStatus: async (jobId) => {
+    if (USE_DUMMY_DATA) {
+      return Promise.resolve({ status: 'finished', total: 0, processed: 0 });
+    }
+    const response = await api.get(`/api/advance-year-decisions/job/${encodeURIComponent(jobId)}?_t=${Date.now()}`);
     return response.data;
   },
 };
