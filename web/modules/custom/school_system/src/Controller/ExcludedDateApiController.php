@@ -21,6 +21,15 @@ class ExcludedDateApiController {
       ->sort('field_excluded_date', 'ASC')
       ->accessCheck(FALSE);
 
+    // Optional year filter: only include excluded dates within the given year.
+    $year = (int) $request->query->get('year', 0);
+    if ($year > 0) {
+      $start = $year . '-01-01';
+      $end = $year . '-12-31';
+      $query->condition('field_excluded_date', $start, '>=');
+      $query->condition('field_excluded_date', $end, '<=');
+    }
+
     // Pagination
     $page = (int) $request->query->get('page', 1);
     $limit = (int) $request->query->get('limit', 50);

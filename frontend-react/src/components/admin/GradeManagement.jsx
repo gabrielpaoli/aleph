@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import GradeForm from './GradeForm';
 import AdvanceYearDecisionManagement from './AdvanceYearDecisionManagement';
-import SubjectValidation from '../preceptor/SubjectValidation';
 import PeriodGradeManagement from '../teacher/PeriodGradeManagement';
 import { useAuth } from '../../context/AuthContext';
 
@@ -14,7 +13,6 @@ const GradeManagement = () => {
   const allSubTabs = [
     { id: 'grades', label: 'Notas Individuales', icon: '⭐', component: GradeForm },
     { id: 'period-grades', label: 'Notas Trimestre', icon: '📊', component: PeriodGradeManagement },
-    { id: 'validation', label: 'Validar Materias', icon: '✅', component: SubjectValidation },
     { id: 'advance-year', label: 'Promocion', icon: '📌', component: AdvanceYearDecisionManagement }
   ];
 

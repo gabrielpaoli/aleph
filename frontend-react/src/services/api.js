@@ -1193,10 +1193,14 @@ export const advanceYearDecisionService = {
 
 // ============ EXCLUDED DATES ============
 export const excludedDateService = {
-  getAll: async (page = 1, limit = 50) => {
-    console.log(`🌐 Fetching excluded dates (page ${page})`);
+  getAll: async (page = 1, limit = 50, year = null) => {
+    console.log(`🌐 Fetching excluded dates (page ${page}, year ${year})`);
     try {
-      const response = await api.get(`/api/excluded-dates?page=${page}&limit=${limit}&_t=${Date.now()}`);
+      let url = `/api/excluded-dates?page=${page}&limit=${limit}&_t=${Date.now()}`;
+      if (year) {
+        url += `&year=${encodeURIComponent(year)}`;
+      }
+      const response = await api.get(url);
       console.log('✅ Excluded dates from API:', response.data);
       return response.data;
     } catch (error) {

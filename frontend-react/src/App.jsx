@@ -65,11 +65,8 @@ const AppRoutes = () => {
 
         {user.role === 'parent' && (
           <>
-            <Route path="/" element={<Navigate to="/estudiante" />} />
-            <Route
-              path="/estudiante"
-              element={<StudentDashboard studentId={user.studentId} />}
-            />
+            <Route path="/" element={<Navigate to={`/estudiante/${user.studentIds?.[0] || user.studentId}`} />} />
+            <Route path="/estudiante" element={<Navigate to={`/estudiante/${user.studentIds?.[0] || user.studentId}`} />} />
             <Route path="/estudiante/:studentId" element={<StudentProfile />} />
           </>
         )}

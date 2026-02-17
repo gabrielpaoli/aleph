@@ -24,11 +24,32 @@ const StudentProfile = () => {
       
       if (!allowedStudents.includes(numericId)) {
         console.warn('🚫 Parent trying to access a student they do not own');
-        navigate('/estudiante');
+        navigate(`/estudiante/${allowedStudents[0]}`);
         return;
       }
     }
   }, [user, numericId, navigate]);
+
+  // Estado para selector de hijos (padres con múltiples estudiantes)
+  const [parentStudentDetails, setParentStudentDetails] = useState({});
+
+  useEffect(() => {
+    if (user && user.role === 'parent' && user.studentIds && user.studentIds.length > 1) {
+      const loadParentStudentNames = async () => {
+        const details = {};
+        for (const sid of user.studentIds) {
+          try {
+            const data = await studentService.getById(sid);
+            details[sid] = data;
+          } catch (err) {
+            console.error('Error loading student', sid, err);
+          }
+        }
+        setParentStudentDetails(details);
+      };
+      loadParentStudentNames();
+    }
+  }, [user]);
 
   const [student, setStudent] = useState(null);
   const [course, setCourse] = useState(null);
@@ -36,6 +57,16 @@ const StudentProfile = () => {
   const [attendance, setAttendance] = useState([]);
   const [notes, setNotes] = useState([]);
   const [periodGrades, setPeriodGrades] = useState([]);
+  // Helper to compute averages for period grades
+  const computeAvg = (field) => {
+    if (!periodGrades || periodGrades.length === 0) return '-';
+    const vals = periodGrades
+      .map(p => p[field])
+      .filter(v => v !== null && v !== undefined && !isNaN(Number(v)))
+      .map(Number);
+    if (vals.length === 0) return '-';
+    return (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(2);
+  };
   const [advanceDecision, setAdvanceDecision] = useState(null);
   const [allCourses, setAllCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -410,6 +441,9 @@ const StudentProfile = () => {
     ? ((stats.present + (stats.halfAbsent * 0.5)) / stats.total * 100).toFixed(1)
     : 0;
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const absentToday = attendance && attendance.some(a => a.date === todayStr && a.status === ATTENDANCE_STATUS.ABSENT);
+
   if (!student) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6">
@@ -432,48 +466,95 @@ const StudentProfile = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
+        {/* Selector de hijos para padres */}
+        {user?.role === 'parent' && user.studentIds && user.studentIds.length > 1 && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              👨‍👩‍👧‍👦 Seleccionar Hijo/a:
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              {user.studentIds.map((sid) => {
+                const detail = parentStudentDetails[sid];
+                const name = detail
+                  ? `${detail.firstName} ${detail.lastName}`
+                  : `Estudiante ${sid}`;
+                return (
+                  <button
+                    key={sid}
+                    onClick={() => navigate(`/estudiante/${sid}`)}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                      numericId === sid
+                        ? 'bg-indigo-600 text-white shadow-lg'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-2 transition-colors"
-          >
-            <span className="text-xl">←</span> Volver
-          </button>
+          {user?.role !== 'parent' && (
+            <button
+              onClick={() => navigate(-1)}
+              className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-2 transition-colors"
+            >
+              <span className="text-xl">←</span> Volver
+            </button>
+          )}
           <div className="flex flex-col sm:flex-row gap-2">
-            <button
-              onClick={refreshGrades}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
-              title="Recargar calificaciones"
-            >
-              🔄 Actualizar
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="bg-slate-600 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors shadow-sm"
-            >
-              🖨️ Imprimir
-            </button>
+            {user?.role !== 'parent' && (
+              <button
+                onClick={refreshGrades}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
+                title="Recargar calificaciones"
+              >
+                🔄 Actualizar
+              </button>
+            )}
           </div>
         </div>
 
         {/* Información Personal */}
+        {absentToday && (
+          <div className="mb-4 p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-800">
+            <p className="font-semibold">🔴 Ausente hoy</p>
+            <p className="text-sm">El estudiante estuvo ausente el día {new Date().toLocaleDateString('es-AR')}</p>
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-4xl font-bold text-slate-800 mb-2">
-                {student.firstName} {student.lastName}
-              </h1>
-              <p className="text-slate-500 font-medium">Legajo #{student.legajo || student.id}</p>
-            </div>
-            <div className="text-left sm:text-right">
-              <div className="inline-block bg-gradient-to-br from-indigo-500 to-purple-600 text-white px-6 py-4 rounded-xl shadow-lg">
-                <div className="text-sm font-semibold opacity-90">Curso</div>
-                <div className="text-3xl font-bold">{course?.name || 'N/A'}</div>
-                <div className="text-sm opacity-90">{course?.shift || ''}</div>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+              <div>
+                <h1 className="text-4xl font-bold text-slate-800 mb-2">
+                  {student.firstName} {student.lastName}
+                </h1>
+                <p className="text-slate-500 font-medium">Legajo #{student.legajo || student.id}</p>
+
+                {/* Botón imprimir colocado debajo de Legajo */}
+                <div className="mt-3">
+                  <button
+                    onClick={() => window.print()}
+                    className="flex items-center gap-2 px-3 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors"
+                    title="Imprimir perfil"
+                  >
+                    🖨️ Imprimir
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-left sm:text-right">
+                <div className="inline-block bg-gradient-to-br from-indigo-500 to-purple-600 text-white px-6 py-4 rounded-xl shadow-lg">
+                  <div className="text-sm font-semibold opacity-90">Curso</div>
+                  <div className="text-3xl font-bold">{course?.name || 'N/A'}</div>
+                  <div className="text-sm opacity-90">{course?.shift || ''}</div>
+                </div>
               </div>
             </div>
-          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-200">
             <div className="bg-slate-50 rounded-lg p-4">
@@ -706,6 +787,18 @@ const StudentProfile = () => {
                     );
                   })}
                 </tbody>
+                <tfoot className="bg-slate-50">
+                  <tr className="border-t border-slate-200 font-semibold">
+                    <td className="px-4 py-3 text-left">Promedio</td>
+                    <td className="px-4 py-3 text-left"></td>
+                    <td className="px-4 py-3 text-center">{computeAvg('trimester_1')}</td>
+                    <td className="px-4 py-3 text-center">{computeAvg('trimester_2')}</td>
+                    <td className="px-4 py-3 text-center">{computeAvg('trimester_3')}</td>
+                    <td className="px-4 py-3 text-center">{computeAvg('final_grade')}</td>
+                    <td className="px-4 py-3 text-center">-</td>
+                    <td className="px-4 py-3 text-center">-</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
@@ -714,7 +807,7 @@ const StudentProfile = () => {
         {/* Materias y Notas */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-8">
           <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-slate-800">
-            📚 Materias y Calificaciones
+            📚 Calificaciones Diarias
           </h2>
 
           {subjects.length === 0 ? (
@@ -794,33 +887,7 @@ const StudentProfile = () => {
           )}
         </div>
 
-        {/* Resumen General */}
-        <div className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl shadow-lg p-5 sm:p-8 mt-6 text-white">
-          <h2 className="text-2xl font-bold mb-6">📈 Resumen General</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-              <p className="text-white/80 text-sm font-medium mb-1">Materias Cursando</p>
-              <p className="text-4xl font-bold">{subjects.length}</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-              <p className="text-white/80 text-sm font-medium mb-1">Promedio General</p>
-              <p className="text-4xl font-bold">
-                {subjects.length > 0
-                  ? (subjects.reduce((sum, subject) => {
-                    const grades = getGradesBySubject(subject.id);
-                    if (grades.length === 0) return sum;
-                    return sum + (grades.reduce((s, g) => s + g.grade, 0) / grades.length);
-                  }, 0) / subjects.filter(s => getGradesBySubject(s.id).length > 0).length).toFixed(2)
-                  : 'S/N'
-                }
-              </p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-              <p className="text-white/80 text-sm font-medium mb-1">% Asistencia</p>
-              <p className="text-4xl font-bold">{attendancePercentage}%</p>
-            </div>
-          </div>
-        </div>
+        {/* Resumen General eliminado: promedios ahora mostrados en la tabla de Notas de Trimestre y Final */}
       </div>
     </div>
   );

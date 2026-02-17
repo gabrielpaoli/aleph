@@ -11,20 +11,40 @@ const ExcludedDatesManager = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
   const [newDate, setNewDate] = useState('');
   const [newReason, setNewReason] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Formatea una fecha ISO 'YYYY-MM-DD' como fecha local sin desfase horario
+  const formatISODateLocal = (iso) => {
+    if (!iso) return '';
+    const parts = String(iso).split('-').map(Number);
+    if (parts.length !== 3) return iso;
+    const [y, m, d] = parts;
+    try {
+      return new Date(y, m - 1, d).toLocaleDateString('es-AR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'short'
+      });
+    } catch (e) {
+      return iso;
+    }
+  };
+
   // Cargar días excluidos
-  const loadExcludedDates = async (page = 1) => {
+  const loadExcludedDates = async (page = 1, year = selectedYear) => {
     try {
       setLoading(true);
       setError(null);
       console.log(`📅 Loading excluded dates (page ${page})...`);
       
-      const response = await excludedDateService.getAll(page);
+      const response = await excludedDateService.getAll(page, 50, year);
       
       setExcludedDates(response.items || []);
       setTotalPages(response.pages || 1);
@@ -40,8 +60,8 @@ const ExcludedDatesManager = () => {
 
   // Cargar datos al montar
   useEffect(() => {
-    loadExcludedDates(1);
-  }, []);
+    loadExcludedDates(1, selectedYear);
+  }, [selectedYear]);
 
   // Crear nuevo día excluido
   const handleAddDate = async (e) => {
@@ -67,8 +87,8 @@ const ExcludedDatesManager = () => {
       setNewReason('');
       setShowForm(false);
 
-      // Recargar lista
-      loadExcludedDates(1);
+      // Recargar lista (respetando el año seleccionado)
+      loadExcludedDates(1, selectedYear);
 
       // Limpiar mensaje de éxito después de 3 segundos
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -98,8 +118,8 @@ const ExcludedDatesManager = () => {
 
       setSuccessMessage('Día excluido eliminado exitosamente');
 
-      // Recargar lista
-      loadExcludedDates(currentPage);
+      // Recargar lista (respetando el año seleccionado)
+      loadExcludedDates(currentPage, selectedYear);
 
       // Limpiar mensaje de éxito después de 3 segundos
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -141,16 +161,33 @@ const ExcludedDatesManager = () => {
 
       {/* Botón para mostrar/ocultar formulario */}
       <div className="mb-6">
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            showForm
-              ? 'bg-gray-300 text-gray-800 hover:bg-gray-400'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-        >
-          {showForm ? 'Cancelar' : '+ Agregar Día Excluido'}
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              showForm
+                ? 'bg-gray-300 text-gray-800 hover:bg-gray-400'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            {showForm ? 'Cancelar' : '+ Agregar Día Excluido'}
+          </button>
+
+          {/* Selector de año para filtrar */}
+          <label className="text-sm font-medium text-gray-700">Año:</label>
+          <select
+            value={selectedYear}
+            onChange={(e) => { setSelectedYear(Number(e.target.value)); setCurrentPage(1); }}
+            className="px-3 py-2 border border-gray-300 rounded-lg"
+          >
+            {Array.from({ length: 6 }).map((_, idx) => {
+              const y = currentYear - 3 + idx; // rango: currentYear-3 .. currentYear+2
+              return (
+                <option key={y} value={y}>{y}</option>
+              );
+            })}
+          </select>
+        </div>
       </div>
 
       {/* Formulario para agregar día excluido */}
@@ -242,12 +279,7 @@ const ExcludedDatesManager = () => {
                     className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-4 py-3 text-gray-800">
-                      {new Date(excludedDate.date).toLocaleDateString('es-AR', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        weekday: 'short'
-                      })}
+                      {formatISODateLocal(excludedDate.date)}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
                       {excludedDate.reason || '—'}
@@ -270,7 +302,7 @@ const ExcludedDatesManager = () => {
           {totalPages > 1 && (
             <div className="mt-6 flex justify-center gap-2">
               <button
-                onClick={() => loadExcludedDates(Math.max(1, currentPage - 1))}
+                onClick={() => loadExcludedDates(Math.max(1, currentPage - 1), selectedYear)}
                 disabled={currentPage === 1}
                 className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50"
               >
@@ -280,7 +312,7 @@ const ExcludedDatesManager = () => {
                 Página {currentPage} de {totalPages}
               </span>
               <button
-                onClick={() => loadExcludedDates(Math.min(totalPages, currentPage + 1))}
+                onClick={() => loadExcludedDates(Math.min(totalPages, currentPage + 1), selectedYear)}
                 disabled={currentPage === totalPages}
                 className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50"
               >
