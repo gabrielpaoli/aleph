@@ -4,9 +4,10 @@ import React, { useEffect, useState } from 'react';
 import { advanceYearDecisionService, courseService, studentService } from '../../services/api';
 
 const ACTION_COLUMNS = [
+  { value: 'cursando', label: 'Cursando', color: 'border-slate-300 bg-slate-50' },
   { value: 'promote', label: 'Pasa de ano', color: 'border-emerald-300 bg-emerald-50' },
   { value: 'retain', label: 'Repite', color: 'border-amber-300 bg-amber-50' },
-  { value: 'graduate', label: 'Egreso', color: 'border-slate-300 bg-slate-50' },
+  { value: 'graduate', label: 'Egreso', color: 'border-violet-300 bg-violet-50' },
 ];
 
 const AdvanceYearDecisionManagement = () => {
@@ -77,8 +78,8 @@ const AdvanceYearDecisionManagement = () => {
       courseStudents.forEach((student) => {
         if (!nextDecisions[student.id]) {
           nextDecisions[student.id] = {
-            action: 'promote',
-            nextCourseId: defaultNextCourseId,
+            action: 'cursando',
+            nextCourseId: '',
           };
         } else if (nextDecisions[student.id].action === 'promote' && !nextDecisions[student.id].nextCourseId) {
           nextDecisions[student.id].nextCourseId = defaultNextCourseId;
@@ -94,7 +95,7 @@ const AdvanceYearDecisionManagement = () => {
   };
 
   const getDecisionForStudent = (studentId) => {
-    return decisions[studentId] || { action: 'promote', nextCourseId: '' };
+    return decisions[studentId] || { action: 'cursando', nextCourseId: '' };
   };
 
   const setDecision = (studentId, patch) => {
@@ -165,6 +166,14 @@ const AdvanceYearDecisionManagement = () => {
   };
 
   const handleCloseYear = async () => {
+    const hasCursando = students.some(
+      (student) => getDecisionForStudent(student.id).action === 'cursando'
+    );
+    if (hasCursando) {
+      setError('No se puede cerrar el ano lectivo si hay estudiantes en Cursando');
+      return;
+    }
+
     try {
       setClosing(true);
       setError('');
@@ -209,6 +218,9 @@ const AdvanceYearDecisionManagement = () => {
   };
 
   const nextCourseOptions = courses.filter((course) => String(course.id) !== String(selectedCourseId));
+  const hasCursando = students.some(
+    (student) => getDecisionForStudent(student.id).action === 'cursando'
+  );
 
   return (
     <div className="p-4 sm:p-6">
@@ -254,7 +266,7 @@ const AdvanceYearDecisionManagement = () => {
               </button>
               <button
                 onClick={() => setShowCloseModal(true)}
-                disabled={closing}
+                disabled={closing || hasCursando}
                 className="px-4 py-2 bg-rose-600 text-white font-semibold rounded-lg hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {closing ? 'Cerrando...' : 'Cerrar el ano lectivo'}
@@ -265,6 +277,11 @@ const AdvanceYearDecisionManagement = () => {
 
         {error && (
           <div className="mt-4 text-rose-600 font-medium">{error}</div>
+        )}
+        {hasCursando && !error && (
+          <div className="mt-4 text-amber-600 font-medium">
+            Para cerrar el ano lectivo, todos los estudiantes deben salir de Cursando.
+          </div>
         )}
         {success && (
           <div className="mt-4 text-emerald-600 font-medium">{success}</div>

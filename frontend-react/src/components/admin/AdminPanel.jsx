@@ -8,11 +8,12 @@ import TeacherManagement from './TeacherManagement';
 import GradeManagement from './GradeManagement';
 import UserManagement from './UserManagement';
 import NoteForm from './NoteForm';
+import { useAuth } from '../../context/AuthContext';
 
 const AdminPanel = () => {
-  const [activeTab, setActiveTab] = useState('students');
+  const { user } = useAuth();
 
-  const tabs = [
+  const allTabs = [
     { id: 'students', label: 'Estudiantes', icon: '👨‍🎓', component: StudentForm },
     { id: 'courses', label: 'Cursos', icon: '📚', component: CourseForm },
     { id: 'subjects', label: 'Materias', icon: '📖', component: SubjectForm },
@@ -21,6 +22,13 @@ const AdminPanel = () => {
     { id: 'users', label: 'Usuarios', icon: '👥', component: UserManagement },
     { id: 'notes', label: 'Notas', icon: '📝', component: NoteForm }
   ];
+
+  // Docente solo ve Calificaciones
+  const tabs = user?.role === 'docente'
+    ? allTabs.filter(t => t.id === 'grades')
+    : allTabs;
+
+  const [activeTab, setActiveTab] = useState(user?.role === 'docente' ? 'grades' : 'students');
 
   const ActiveComponent = tabs.find(t => t.id === activeTab)?.component;
 

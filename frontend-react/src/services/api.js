@@ -1134,6 +1134,24 @@ export const advanceYearDecisionService = {
     return response.data;
   },
 
+  getByStudent: async (studentId, academicYear) => {
+    if (USE_DUMMY_DATA) {
+      const year = Number(academicYear);
+      return Promise.resolve(
+        (dummyData.advanceYearDecisions || []).find(
+          (item) => item.studentId === studentId && item.academicYear === year
+        ) || null
+      );
+    }
+
+    const params = new URLSearchParams({
+      academicYear: String(academicYear),
+      _t: String(Date.now()),
+    });
+    const response = await api.get(`/api/advance-year-decisions/student/${studentId}?${params.toString()}`);
+    return response.data;
+  },
+
   upsert: async (items) => {
     if (USE_DUMMY_DATA) {
       dummyData.advanceYearDecisions = dummyData.advanceYearDecisions || [];

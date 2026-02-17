@@ -14,6 +14,43 @@ use Symfony\Component\HttpFoundation\Request;
 class AdvanceYearDecisionApiController extends ControllerBase {
 
   /**
+   * Get advance year decision by student and academic year.
+   */
+  public function getByStudent($student_id, Request $request) {
+    $current_user = \Drupal::currentUser();
+    if ($current_user->isAnonymous()) {
+      return new JsonResponse(['error' => 'Access denied'], 403);
+    }
+
+    $academic_year = (int) $request->query->get('academicYear', date('Y'));
+
+    $query = \Drupal::entityQuery('node')
+      ->condition('type', 'advance_year_decision')
+      ->condition('field_student_ref', $student_id)
+      ->condition('field_academic_year', $academic_year)
+      ->accessCheck(FALSE);
+
+    $nids = $query->execute();
+    if (empty($nids)) {
+      return new JsonResponse(NULL);
+    }
+
+    $node = Node::load(reset($nids));
+    if (!$node) {
+      return new JsonResponse(NULL);
+    }
+
+    return new JsonResponse([
+      'id' => (int) $node->id(),
+      'studentId' => (int) $node->get('field_student_ref')->target_id,
+      'currentCourseId' => (int) $node->get('field_current_course_ref')->target_id,
+      'nextCourseId' => $node->get('field_next_course_ref')->target_id ? (int) $node->get('field_next_course_ref')->target_id : NULL,
+      'action' => $node->get('field_action')->value,
+      'academicYear' => (int) $node->get('field_academic_year')->value,
+    ]);
+  }
+
+  /**
    * Get advance year decisions by course and academic year.
    */
   public function getByCourse($course_id, Request $request) {
@@ -180,6 +217,25 @@ class AdvanceYearDecisionApiController extends ControllerBase {
       return new JsonResponse([
         'error' => 'Missing advance year decisions for some students',
         'missing' => $missing,
+      ], 400);
+    }
+
+    $cursando = [];
+    foreach ($student_ids as $student_id) {
+      $decision = $decision_map[(int) $student_id] ?? NULL;
+      if ($decision && ($decision['action'] ?? NULL) === 'cursando') {
+        $student = Node::load($student_id);
+        $cursando[] = [
+          'id' => (int) $student_id,
+          'name' => $student ? $student->getTitle() : 'N/A',
+        ];
+      }
+    }
+
+    if (!empty($cursando)) {
+      return new JsonResponse([
+        'error' => 'Hay estudiantes en Cursando. No se puede cerrar el ano lectivo.',
+        'cursando' => $cursando,
       ], 400);
     }
 

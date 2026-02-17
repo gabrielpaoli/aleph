@@ -234,6 +234,7 @@ function _school_system_create_fields() {
   ]);
   _school_system_create_field('node', 'advance_year_decision', 'field_action', 'list_string', 'Action', FALSE, [
     'allowed_values' => [
+      'cursando' => 'Cursando',
       'promote' => 'Promote',
       'retain' => 'Retain',
       'graduate' => 'Graduate',

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ATTENDANCE_STATUS } from '../../services/dummyData';
-import { studentService, courseService, subjectService, attendanceService, noteService, periodGradeService } from '../../services/api';
+import { studentService, courseService, subjectService, attendanceService, noteService, periodGradeService, advanceYearDecisionService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useGrades } from '../../hooks/useGrades';
 
@@ -36,6 +36,8 @@ const StudentProfile = () => {
   const [attendance, setAttendance] = useState([]);
   const [notes, setNotes] = useState([]);
   const [periodGrades, setPeriodGrades] = useState([]);
+  const [advanceDecision, setAdvanceDecision] = useState(null);
+  const [allCourses, setAllCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -80,6 +82,7 @@ const StudentProfile = () => {
         if (studentData.courseId) {
           try {
             const coursesData = await courseService.getAll();
+            setAllCourses(coursesData || []);
             const studentCourse = coursesData.find(c => c.id === studentData.courseId);
             console.log('✅ Course loaded:', studentCourse);
             setCourse(studentCourse);
@@ -124,6 +127,15 @@ const StudentProfile = () => {
         setPeriodGrades(periodGradesData || []);
       } catch (periodGradesError) {
         console.warn('⚠️ Error loading period grades:', periodGradesError.message);
+      }
+
+      // Cargar estado de promocion del estudiante
+      try {
+        const year = new Date().getFullYear();
+        const decisionData = await advanceYearDecisionService.getByStudent(numericId, year);
+        setAdvanceDecision(decisionData || null);
+      } catch (advanceError) {
+        console.warn('⚠️ Error loading advance decision:', advanceError.message);
       }
 
       // Si tenemos al menos calificaciones, es OK
@@ -398,6 +410,25 @@ const StudentProfile = () => {
     ? ((stats.present + (stats.halfAbsent * 0.5)) / stats.total * 100).toFixed(1)
     : 0;
 
+  if (!student) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6">
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <h1 className="text-2xl font-bold text-slate-800 mb-2">Estudiante no encontrado</h1>
+          <p className="text-slate-600 mb-4">
+            No se pudo cargar la informacion del estudiante. Revisa el ID o intenta nuevamente.
+          </p>
+          <button
+            onClick={() => navigate(-1)}
+            className="text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-2 transition-colors"
+          >
+            <span className="text-xl">←</span> Volver
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
@@ -458,6 +489,26 @@ const StudentProfile = () => {
             <div className="bg-slate-50 rounded-lg p-4">
               <p className="text-sm text-slate-600 mb-1 font-medium">🕐 Turno</p>
               <p className="font-semibold text-slate-800">{course?.shift || 'N/A'}</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4">
+              <p className="text-sm text-slate-600 mb-1 font-medium">🎯 Estado de Promocion</p>
+              <p className="font-semibold text-slate-800">
+                {(() => {
+                  const action = advanceDecision?.action || 'cursando';
+                  const labels = {
+                    cursando: 'Cursando',
+                    promote: 'Pasa de ano',
+                    retain: 'Repite',
+                    graduate: 'Egreso',
+                  };
+                  return labels[action] || 'Cursando';
+                })()}
+              </p>
+              {advanceDecision?.action === 'promote' && advanceDecision?.nextCourseId && (
+                <p className="text-xs text-slate-500 mt-1">
+                  Curso destino: {allCourses.find(c => c.id === advanceDecision.nextCourseId)?.name || 'N/A'}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -601,93 +652,61 @@ const StudentProfile = () => {
               📊 Notas de Trimestre y Final
             </h2>
 
-            <div className="space-y-4">
-              {periodGrades.map(pg => {
-                const subject = subjects.find(s => s.id === pg.subjectId);
-                const subjectName = subject ? subject.name : 'Materia desconocida';
-                
-                const hasTrim1 = pg.trimester_1 !== null && pg.trimester_1 !== undefined;
-                const hasTrim2 = pg.trimester_2 !== null && pg.trimester_2 !== undefined;
-                const hasTrim3 = pg.trimester_3 !== null && pg.trimester_3 !== undefined;
-                const hasFinal = pg.final_grade !== null && pg.final_grade !== undefined;
-                const hasRecDic = pg.recuperatorio_diciembre !== null && pg.recuperatorio_diciembre !== undefined;
-                const hasRecFeb = pg.recuperatorio_febrero !== null && pg.recuperatorio_febrero !== undefined;
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-100 text-slate-600">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold">Materia</th>
+                    <th className="px-4 py-3 text-left font-semibold">Ano</th>
+                    <th className="px-4 py-3 text-center font-semibold">T1</th>
+                    <th className="px-4 py-3 text-center font-semibold">T2</th>
+                    <th className="px-4 py-3 text-center font-semibold">T3</th>
+                    <th className="px-4 py-3 text-center font-semibold">Final</th>
+                    <th className="px-4 py-3 text-center font-semibold">Rec Dic</th>
+                    <th className="px-4 py-3 text-center font-semibold">Rec Feb</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {periodGrades.map(pg => {
+                    const subject = subjects.find(s => s.id === pg.subjectId);
+                    const subjectName = subject ? subject.name : 'Materia desconocida';
 
-                const getGradeColor = (grade) => {
-                  if (grade === null || grade === undefined) return 'text-slate-300';
-                  if (grade >= 7) return 'text-emerald-600';
-                  if (grade >= 4) return 'text-amber-600';
-                  return 'text-rose-600';
-                };
+                    const getGradeColor = (grade) => {
+                      if (grade === null || grade === undefined) return 'text-slate-300';
+                      if (grade >= 7) return 'text-emerald-600';
+                      if (grade >= 4) return 'text-amber-600';
+                      return 'text-rose-600';
+                    };
 
-                const getGradeBg = (grade) => {
-                  if (grade === null || grade === undefined) return 'bg-slate-50 border-slate-200';
-                  if (grade >= 7) return 'bg-emerald-50 border-emerald-300';
-                  if (grade >= 4) return 'bg-amber-50 border-amber-300';
-                  return 'bg-rose-50 border-rose-300';
-                };
+                    const formatGrade = (grade) => (grade ?? '-');
 
-                return (
-                  <div key={pg.id} className="border-2 border-slate-200 rounded-xl p-5 hover:shadow-lg transition-all">
-                    <div className="mb-4">
-                      <h3 className="font-bold text-xl text-slate-800">{subjectName}</h3>
-                      <p className="text-sm text-slate-500 mt-1">Año {pg.academicYear}</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
-                      {/* Trimestre 1 */}
-                      <div className={`${getGradeBg(pg.trimester_1)} border-2 px-4 py-3 rounded-xl text-center`}>
-                        <div className="text-xs text-slate-600 font-bold uppercase tracking-wide">1er Trimestre</div>
-                        <div className={`text-2xl font-bold ${getGradeColor(pg.trimester_1)} mt-1`}>
-                          {hasTrim1 ? pg.trimester_1 : '-'}
-                        </div>
-                      </div>
-
-                      {/* Trimestre 2 */}
-                      <div className={`${getGradeBg(pg.trimester_2)} border-2 px-4 py-3 rounded-xl text-center`}>
-                        <div className="text-xs text-slate-600 font-bold uppercase tracking-wide">2do Trimestre</div>
-                        <div className={`text-2xl font-bold ${getGradeColor(pg.trimester_2)} mt-1`}>
-                          {hasTrim2 ? pg.trimester_2 : '-'}
-                        </div>
-                      </div>
-
-                      {/* Trimestre 3 */}
-                      <div className={`${getGradeBg(pg.trimester_3)} border-2 px-4 py-3 rounded-xl text-center`}>
-                        <div className="text-xs text-slate-600 font-bold uppercase tracking-wide">3er Trimestre</div>
-                        <div className={`text-2xl font-bold ${getGradeColor(pg.trimester_3)} mt-1`}>
-                          {hasTrim3 ? pg.trimester_3 : '-'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {/* Nota Final */}
-                      <div className={`${getGradeBg(pg.final_grade)} border-2 px-4 py-3 rounded-xl text-center shadow-md`}>
-                        <div className="text-xs text-slate-600 font-bold uppercase tracking-wide">Nota Final</div>
-                        <div className={`text-3xl font-bold ${getGradeColor(pg.final_grade)} mt-1`}>
-                          {hasFinal ? pg.final_grade : '-'}
-                        </div>
-                      </div>
-
-                      {/* Recuperatorio Diciembre */}
-                      <div className={`${getGradeBg(pg.recuperatorio_diciembre)} border-2 px-4 py-3 rounded-xl text-center`}>
-                        <div className="text-xs text-slate-600 font-bold uppercase tracking-wide">Rec. Diciembre</div>
-                        <div className={`text-2xl font-bold ${getGradeColor(pg.recuperatorio_diciembre)} mt-1`}>
-                          {hasRecDic ? pg.recuperatorio_diciembre : '-'}
-                        </div>
-                      </div>
-
-                      {/* Recuperatorio Febrero */}
-                      <div className={`${getGradeBg(pg.recuperatorio_febrero)} border-2 px-4 py-3 rounded-xl text-center`}>
-                        <div className="text-xs text-slate-600 font-bold uppercase tracking-wide">Rec. Febrero</div>
-                        <div className={`text-2xl font-bold ${getGradeColor(pg.recuperatorio_febrero)} mt-1`}>
-                          {hasRecFeb ? pg.recuperatorio_febrero : '-'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    return (
+                      <tr key={pg.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 font-semibold text-slate-800">{subjectName}</td>
+                        <td className="px-4 py-3 text-slate-600">{pg.academicYear}</td>
+                        <td className={`px-4 py-3 text-center font-semibold ${getGradeColor(pg.trimester_1)}`}>
+                          {formatGrade(pg.trimester_1)}
+                        </td>
+                        <td className={`px-4 py-3 text-center font-semibold ${getGradeColor(pg.trimester_2)}`}>
+                          {formatGrade(pg.trimester_2)}
+                        </td>
+                        <td className={`px-4 py-3 text-center font-semibold ${getGradeColor(pg.trimester_3)}`}>
+                          {formatGrade(pg.trimester_3)}
+                        </td>
+                        <td className={`px-4 py-3 text-center font-bold ${getGradeColor(pg.final_grade)}`}>
+                          {formatGrade(pg.final_grade)}
+                        </td>
+                        <td className={`px-4 py-3 text-center font-semibold ${getGradeColor(pg.recuperatorio_diciembre)}`}>
+                          {formatGrade(pg.recuperatorio_diciembre)}
+                        </td>
+                        <td className={`px-4 py-3 text-center font-semibold ${getGradeColor(pg.recuperatorio_febrero)}`}>
+                          {formatGrade(pg.recuperatorio_febrero)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

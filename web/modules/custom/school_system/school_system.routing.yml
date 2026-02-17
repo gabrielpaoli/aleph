@@ -396,6 +396,14 @@ school_system.api.advance_year_decisions.by_course:
   requirements:
     _access: 'TRUE'
 
+school_system.api.advance_year_decisions.by_student:
+  path: '/api/advance-year-decisions/student/{student_id}'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\AdvanceYearDecisionApiController::getByStudent'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'
+
 school_system.api.advance_year_decisions.upsert:
   path: '/api/advance-year-decisions'
   defaults:
