@@ -17,6 +17,8 @@ const SubjectForm = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
+  const [search, setSearch] = useState('');
+  const [filterCourse, setFilterCourse] = useState('');
 
   const ITEMS_PER_PAGE = 10;
 
@@ -137,6 +139,15 @@ const SubjectForm = () => {
     );
   }
 
+  const filteredSubjects = subjects.filter(s => {
+    const q = search.toLowerCase();
+    if (q && !s.name?.toLowerCase().includes(q)) return false;
+    if (filterCourse && String(s.courseId) !== String(filterCourse)) return false;
+    return true;
+  });
+  const pageCount   = Math.ceil(filteredSubjects.length / ITEMS_PER_PAGE);
+  const pageSubjects = filteredSubjects.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+
   const getCourseName = (courseId) => {
     const course = courses.find(c => c.id === courseId);
     return course ? `${course.name} - ${course.shift}` : 'N/A';
@@ -151,7 +162,10 @@ const SubjectForm = () => {
       return 'Sin asignar';
     }
 
-    return assigned.map(teacher => teacher.name || teacher.email).join(', ');
+    return assigned.map(teacher => {
+      const fullName = [teacher.firstName, teacher.apellido].filter(Boolean).join(' ');
+      return fullName || teacher.email;
+    }).join(', ');
   };
 
   return (
@@ -239,6 +253,28 @@ const SubjectForm = () => {
         </div>
       </form>
 
+      {/* Buscadores */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <input
+          type="text"
+          placeholder="🔍 Buscar por nombre…"
+          value={search}
+          onChange={e => { setSearch(e.target.value); setCurrentPage(0); }}
+          className="w-full sm:max-w-xs border-2 border-slate-300 p-2 rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
+        />
+        <select
+          value={filterCourse}
+          onChange={e => { setFilterCourse(e.target.value); setCurrentPage(0); }}
+          className="border-2 border-slate-300 p-2 rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
+        >
+          <option value="">Todos los cursos</option>
+          {courses.map(c => (
+            <option key={c.id} value={String(c.id)}>{c.name} - {c.shift}</option>
+          ))}
+        </select>
+        <span className="text-sm text-slate-500">{filteredSubjects.length} materia{filteredSubjects.length !== 1 ? 's' : ''}</span>
+      </div>
+
       {/* Tabla de materias */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
@@ -252,14 +288,14 @@ const SubjectForm = () => {
             </tr>
           </thead>
           <tbody>
-            {subjects.length === 0 ? (
+            {filteredSubjects.length === 0 ? (
               <tr>
                 <td colSpan="4" className="text-center p-6 text-slate-500">
                   No hay materias disponibles
                 </td>
               </tr>
             ) : (
-              subjects.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map(subject => (
+              pageSubjects.map(subject => (
                 <tr key={subject.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
                   <td className="p-4">{subject.name}</td>
                   <td className="p-4">{subject.courseName || getCourseName(subject.courseId)}</td>
@@ -290,7 +326,7 @@ const SubjectForm = () => {
         </div>
 
         {/* Paginación */}
-        {subjects.length > ITEMS_PER_PAGE && (
+        {pageCount > 1 && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50">
             <button
               onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
@@ -300,11 +336,11 @@ const SubjectForm = () => {
               ← Anterior
             </button>
             <span className="text-sm font-semibold text-slate-600">
-              Página {currentPage + 1} de {Math.ceil(subjects.length / ITEMS_PER_PAGE)}
+              Página {currentPage + 1} de {pageCount}
             </span>
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage >= Math.ceil(subjects.length / ITEMS_PER_PAGE) - 1}
+              disabled={currentPage >= pageCount - 1}
               className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Siguiente →
