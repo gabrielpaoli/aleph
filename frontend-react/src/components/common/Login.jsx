@@ -90,14 +90,14 @@ const Login = () => {
             </button>
 
             <button
-              onClick={() => quickLogin('padre.perez@email.com')}
+              onClick={() => quickLogin('padre.perez@email.com', '1234')}
               className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-2.5 rounded-lg hover:from-emerald-600 hover:to-teal-600 transition-all text-sm font-medium shadow-sm"
             >
               👨‍👩‍👦 Entrar como Padre (Juan Pérez)
             </button>
 
             <button
-              onClick={() => quickLogin('padre.gonzalez@email.com')}
+              onClick={() => quickLogin('padre.gonzalez@email.com', '1234')}
               className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-2.5 rounded-lg hover:from-emerald-600 hover:to-teal-600 transition-all text-sm font-medium shadow-sm"
             >
               👨‍👩‍👦 Entrar como Padre (María González)
