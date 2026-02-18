@@ -1,7 +1,7 @@
 // components/admin/NoteForm.jsx
 
 import React, { useState, useEffect } from 'react';
-import { noteService } from '../../services/api';
+import { noteService, whatsappService } from '../../services/api';
 import { studentService } from '../../services/api';
 import { courseService } from '../../services/api';
 import NotesHistory from './NotesHistory';
@@ -13,11 +13,18 @@ const NoteForm = () => {
   const [content, setContent] = useState('');
   const [selectedStudent, setSelectedStudent] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('');
+  // Autocomplete state for student picker
+  const [studentQuery, setStudentQuery] = useState('');
+  const [studentSuggestions, setStudentSuggestions] = useState([]);
+  const [showStudentSuggestions, setShowStudentSuggestions] = useState(false);
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+  const [sendViaWhatsapp, setSendViaWhatsapp] = useState(false);
+  const [sendingWhatsapp, setSendingWhatsapp] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -26,12 +33,14 @@ const NoteForm = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [studentsData, coursesData] = await Promise.all([
+      const [studentsData, coursesData, waStatus] = await Promise.all([
         studentService.getAll(),
-        courseService.getAll()
+        courseService.getAll(),
+        whatsappService.getStatus(),
       ]);
       setStudents(studentsData || []);
       setCourses(coursesData || []);
+      setWhatsappEnabled(waStatus.enabled ?? false);
     } catch (err) {
       console.error('Error loading data:', err);
       setError('Error al cargar datos');
@@ -40,47 +49,84 @@ const NoteForm = () => {
     }
   };
 
+  // ---------- Student autocomplete helpers ----------
+  const updateStudentQuery = (q) => {
+    setStudentQuery(q);
+    const trimmed = q.trim();
+    if (trimmed === '') {
+      setStudentSuggestions([]);
+      setShowStudentSuggestions(false);
+      setSelectedStudent('');
+      return;
+    }
+
+    const lower = trimmed.toLowerCase();
+    const filtered = students.filter(s => {
+      const fullname = ((s.firstName || '') + ' ' + (s.lastName || '')).toLowerCase();
+      const email = (s.email || '').toLowerCase();
+      return fullname.includes(lower) || email.includes(lower);
+    }).slice(0, 10);
+
+    setStudentSuggestions(filtered);
+    setShowStudentSuggestions(true);
+  };
+
+  const selectStudent = (s) => {
+    setSelectedStudent(s.id);
+    setStudentQuery((s.firstName || '') + ' ' + (s.lastName || ''));
+    setShowStudentSuggestions(false);
+  };
+
+  const clearSelectedStudent = () => {
+    setSelectedStudent('');
+    setStudentQuery('');
+    setStudentSuggestions([]);
+    setShowStudentSuggestions(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setMessage('');
 
-    if (!title.trim()) {
-      setError('El título es requerido');
-      return;
-    }
-
-    if (!content.trim()) {
-      setError('El contenido es requerido');
-      return;
-    }
-
-    if (noteType === 'individual' && !selectedStudent) {
-      setError('Selecciona un estudiante');
-      return;
-    }
-
-    if (noteType === 'course' && !selectedCourse) {
-      setError('Selecciona un curso');
-      return;
-    }
+    if (!title.trim()) { setError('El título es requerido'); return; }
+    if (!content.trim()) { setError('El contenido es requerido'); return; }
+    if (noteType === 'individual' && !selectedStudent) { setError('Selecciona un estudiante'); return; }
+    if (noteType === 'course' && !selectedCourse) { setError('Selecciona un curso'); return; }
 
     try {
       setLoading(true);
-      const noteData = {
-        title,
-        content,
-        type: noteType
-      };
+      const noteData = { title, content, type: noteType };
+      if (noteType === 'individual') noteData.studentId = selectedStudent;
+      else noteData.courseId = selectedCourse;
 
-      if (noteType === 'individual') {
-        noteData.studentId = selectedStudent;
-      } else {
-        noteData.courseId = selectedCourse;
+      // Always create the note (email via Drupal's own logic)
+      await noteService.create(noteData);
+
+      let successMsg = `Nota ${noteType === 'individual' ? 'enviada al estudiante' : 'enviada al curso'} y correos notificados`;
+
+      // Optionally also send via WhatsApp
+      if (sendViaWhatsapp && whatsappEnabled) {
+        setSendingWhatsapp(true);
+        try {
+          const waPayload = { title, content };
+          if (noteType === 'individual') waPayload.studentId = Number(selectedStudent);
+          else waPayload.courseId = Number(selectedCourse);
+
+          const waResult = await whatsappService.sendNoteMessage(waPayload);
+          successMsg += ` · 💬 ${waResult.message}`;
+          if (waResult.skipped?.length) {
+            successMsg += ` (${waResult.skipped.length} sin teléfono)`;
+          }
+        } catch (waErr) {
+          console.error('WhatsApp error:', waErr);
+          successMsg += ' · ⚠️ Error al enviar WhatsApp: ' + (waErr.response?.data?.error || waErr.message);
+        } finally {
+          setSendingWhatsapp(false);
+        }
       }
 
-      await noteService.create(noteData);
-      setMessage(`Nota ${noteType === 'individual' ? 'enviada al estudiante' : 'enviada al curso'} y correos notificados`);
+      setMessage(successMsg);
       setTitle('');
       setContent('');
       setSelectedStudent('');
@@ -164,22 +210,45 @@ const NoteForm = () => {
               </div>
             </div>
 
-            {/* Student Selection */}
+            {/* Student Selection (predictive) */}
             {noteType === 'individual' && (
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Estudiante</label>
-                <select
-                  value={selectedStudent}
-                  onChange={(e) => setSelectedStudent(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <option value="">Selecciona un estudiante...</option>
-                  {students.map(student => (
-                    <option key={student.id} value={student.id}>
-                      {student.firstName} {student.lastName}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={studentQuery}
+                    onChange={(e) => updateStudentQuery(e.target.value)}
+                    onFocus={() => { if (studentQuery) setShowStudentSuggestions(true); }}
+                    placeholder="Busca por nombre, apellido o email..."
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    aria-autocomplete="list"
+                  />
+
+                  {showStudentSuggestions && studentSuggestions.length > 0 && (
+                    <ul className="absolute z-50 w-full bg-white border border-slate-200 rounded mt-1 max-h-48 overflow-auto">
+                      {studentSuggestions.map(s => (
+                        <li
+                          key={s.id}
+                          onMouseDown={() => selectStudent(s)}
+                          className="px-3 py-2 hover:bg-slate-100 cursor-pointer"
+                        >
+                          <div className="font-semibold text-slate-800">
+                            {s.firstName} {s.lastName} {s.parentPhone ? <span className="ml-2 text-xs">📱</span> : null}
+                          </div>
+                          <div className="text-xs text-slate-500">{s.email}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {selectedStudent && (
+                  <div className="mt-2 flex items-center gap-3">
+                    <div className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded">{studentQuery}</div>
+                    <button type="button" onClick={clearSelectedStudent} className="text-sm text-slate-600 hover:underline">✖️ Quitar</button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -226,13 +295,33 @@ const NoteForm = () => {
               />
             </div>
 
+            {/* WhatsApp option */}
+            {whatsappEnabled && (
+              <div className="p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sendViaWhatsapp}
+                    onChange={(e) => setSendViaWhatsapp(e.target.checked)}
+                    className="w-5 h-5 accent-green-600"
+                  />
+                  <div>
+                    <span className="font-bold text-green-800">💬 Enviar también por WhatsApp</span>
+                    <p className="text-xs text-green-700 mt-0.5">
+                      Se enviará un mensaje WhatsApp a los padres que tengan teléfono registrado.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            )}
+
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:shadow-lg transition-shadow disabled:opacity-50"
+              disabled={loading || sendingWhatsapp}
+              className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-3 px-4 rounded-lg hover:shadow-lg transition-shadow disabled:opacity-50"
             >
-              {loading ? 'Enviando...' : '📤 Enviar Nota'}
+              {(loading || sendingWhatsapp) ? '⏳ Enviando...' : '📤 Enviar Nota'}
             </button>
           </form>
         </div>
@@ -245,3 +334,4 @@ const NoteForm = () => {
 };
 
 export default NoteForm;
+

@@ -1,0 +1,7 @@
+services:
+  whatsapp_notifier.whatsapp_service:
+    class: Drupal\whatsapp_notifier\Service\WhatsappService
+    arguments:
+      - '@config.factory'
+      - '@logger.factory'
+      - '@http_client'

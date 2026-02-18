@@ -1265,3 +1265,52 @@ export const excludedDateService = {
   }
 };
 
+// ============ WHATSAPP NOTIFIER ============
+export const whatsappService = {
+  /**
+   * Check if WhatsApp is configured for this school.
+   * Returns { enabled: bool, school_name: string, from_number_configured: bool }
+   */
+  getStatus: async () => {
+    try {
+      const response = await api.get('/api/whatsapp/status');
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching WhatsApp status:', error);
+      return { enabled: false };
+    }
+  },
+
+  /**
+   * Send WhatsApp absence notifications.
+   * @param {string} date  - 'YYYY-MM-DD'
+   * @param {number[]} studentIds
+   */
+  sendAbsenceMessages: async (date, studentIds) => {
+    console.log('📱 Sending WhatsApp absence messages for', studentIds.length, 'students');
+    const response = await api.post('/api/whatsapp/send-absence', { date, studentIds });
+    return response.data;
+  },
+
+  /**
+   * Send a WhatsApp note to a student or a whole course.
+   * @param {{ title: string, content: string, studentId?: number, courseId?: number }} noteData
+   */
+  sendNoteMessage: async (noteData) => {
+    console.log('📱 Sending WhatsApp note:', noteData.title);
+    const response = await api.post('/api/whatsapp/send-note', noteData);
+    return response.data;
+  },
+
+  /**
+   * Get / save WhatsApp settings (school-level config via Drupal admin form).
+   * The actual settings are changed via the Drupal admin at /admin/config/whatsapp-notifier.
+   * This helper POSTs to a settings endpoint if implemented, otherwise just fetches status.
+   */
+  saveSettings: async (settings) => {
+    console.log('⚙️ Saving WhatsApp settings via API');
+    const response = await api.post('/api/whatsapp/settings', settings);
+    return response.data;
+  },
+};
+

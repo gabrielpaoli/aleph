@@ -14,6 +14,7 @@ const StudentForm = () => {
     firstName: '',
     lastName: '',
     email: '',
+    parentPhone: '',
     courseId: ''
   });
   const [editingId, setEditingId] = useState(null);
@@ -94,7 +95,7 @@ const StudentForm = () => {
       }
 
       await loadData();
-      setFormData({ firstName: '', lastName: '', email: '', courseId: '' });
+      setFormData({ firstName: '', lastName: '', email: '', parentPhone: '', courseId: '' });
       setEditingId(null);
 
     } catch (err) {
@@ -112,6 +113,7 @@ const StudentForm = () => {
       firstName: student.firstName,
       lastName: student.lastName,
       email: student.email,
+      parentPhone: student.parentPhone || '',
       courseId: student.courseId
     });
     setEditingId(student.id);
@@ -139,7 +141,7 @@ const StudentForm = () => {
   };
 
   const handleCancel = () => {
-    setFormData({ firstName: '', lastName: '', email: '', courseId: '' });
+    setFormData({ firstName: '', lastName: '', email: '', parentPhone: '', courseId: '' });
     setEditingId(null);
     setError(null);
   };
@@ -193,6 +195,14 @@ const StudentForm = () => {
             onChange={(e) => setFormData({...formData, email: e.target.value})}
             className="border-2 border-slate-300 p-3 rounded-lg focus:border-indigo-500 focus:outline-none"
             required
+            disabled={loading}
+          />
+          <input
+            type="tel"
+            placeholder="📱 Teléfono (WhatsApp) del padre — ej: +5491112345678"
+            value={formData.parentPhone}
+            onChange={(e) => setFormData({...formData, parentPhone: e.target.value})}
+            className="border-2 border-slate-300 p-3 rounded-lg focus:border-indigo-500 focus:outline-none"
             disabled={loading}
           />
           <select

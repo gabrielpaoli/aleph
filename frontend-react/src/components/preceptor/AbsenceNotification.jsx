@@ -2,17 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { dummyData, ATTENDANCE_STATUS } from '../../services/dummyData';
-import { attendanceService, studentService, courseService } from '../../services/api';
+import { attendanceService, studentService, courseService, whatsappService } from '../../services/api';
 
 const AbsenceNotification = () => {
   const [selectedDate, setSelectedDate] = useState('2026-03-15');
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [sending, setSending] = useState(false);
+  const [sendingWhatsapp, setSendingWhatsapp] = useState(false);
   const [absentStudents, setAbsentStudents] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
 
   useEffect(() => {
     loadInitialData();
@@ -25,13 +27,15 @@ const AbsenceNotification = () => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
-      const [studentsData, coursesData] = await Promise.all([
+      const [studentsData, coursesData, waStatus] = await Promise.all([
         studentService.getAll(),
-        courseService.getAll()
+        courseService.getAll(),
+        whatsappService.getStatus(),
       ]);
 
       setStudents(studentsData);
       setCourses(coursesData);
+      setWhatsappEnabled(waStatus.enabled ?? false);
     } catch (err) {
       console.error('❌ Error loading initial data:', err);
     } finally {
@@ -101,6 +105,32 @@ const AbsenceNotification = () => {
       alert('Error al enviar emails: ' + error.message);
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleSendWhatsapp = async () => {
+    if (selectedStudents.length === 0) {
+      alert('Seleccione al menos un estudiante');
+      return;
+    }
+
+    if (!confirm(`¿Enviar WhatsApp a los padres de ${selectedStudents.length} estudiantes?`)) {
+      return;
+    }
+
+    setSendingWhatsapp(true);
+
+    try {
+      const result = await whatsappService.sendAbsenceMessages(selectedDate, selectedStudents);
+      const skippedMsg = result.skipped?.length
+        ? `\n⚠️ Sin teléfono: ${result.skipped.length} estudiante(s).`
+        : '';
+      alert(`✅ ${result.message}${skippedMsg}`);
+    } catch (error) {
+      console.error('❌ Error sending WhatsApp:', error);
+      alert('Error al enviar WhatsApp: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setSendingWhatsapp(false);
     }
   };
 
@@ -261,6 +291,19 @@ Equipo de Preceptoría`;
                   : `📧 Enviar Emails (${selectedStudents.length} seleccionados)`
                 }
               </button>
+
+              {whatsappEnabled && (
+                <button
+                  onClick={handleSendWhatsapp}
+                  disabled={sendingWhatsapp || selectedStudents.length === 0}
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mt-3"
+                >
+                  {sendingWhatsapp
+                    ? '⏳ Enviando WhatsApp...'
+                    : `💬 Enviar WhatsApp (${selectedStudents.length} seleccionados)`
+                  }
+                </button>
+              )}
             </>
           )}
         </div>

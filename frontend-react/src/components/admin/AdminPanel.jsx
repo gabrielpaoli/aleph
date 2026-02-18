@@ -8,6 +8,7 @@ import TeacherManagement from './TeacherManagement';
 import GradeManagement from './GradeManagement';
 import UserManagement from './UserManagement';
 import NoteForm from './NoteForm';
+import WhatsappSettings from './WhatsappSettings';
 import { useAuth } from '../../context/AuthContext';
 
 const AdminPanel = () => {
@@ -20,7 +21,8 @@ const AdminPanel = () => {
     { id: 'grades', label: 'Calificaciones', icon: '⭐', component: GradeManagement },
     { id: 'teachers', label: 'Docentes', icon: '👨‍🏫', component: TeacherManagement },
     { id: 'users', label: 'Usuarios', icon: '👥', component: UserManagement },
-    { id: 'notes', label: 'Notas', icon: '📝', component: NoteForm }
+    { id: 'notes', label: 'Notas', icon: '📝', component: NoteForm },
+    { id: 'whatsapp', label: 'WhatsApp', icon: '💬', component: WhatsappSettings },
   ];
 
   // Docente solo ve Calificaciones

@@ -173,6 +173,7 @@ function _school_system_create_fields() {
   _school_system_create_field('node', 'student', 'field_first_name', 'string', 'First Name', FALSE);
   _school_system_create_field('node', 'student', 'field_last_name', 'string', 'Last Name', FALSE);
   _school_system_create_field('node', 'student', 'field_parent_email', 'email', 'Parent Email', FALSE);
+  _school_system_create_field('node', 'student', 'field_parent_phone', 'string', 'Parent Phone (WhatsApp)', FALSE);
   _school_system_create_field('node', 'student', 'field_course_ref', 'entity_reference', 'Course', FALSE, [
     'target_type' => 'node',
     'handler_settings' => ['target_bundles' => ['course' => 'course']],
