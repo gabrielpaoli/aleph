@@ -604,6 +604,19 @@ export const authService = {
       console.error('Get current user error:', error);
       throw error;
     }
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    if (USE_DUMMY_DATA) {
+      return Promise.resolve({ success: true, message: 'Contraseña actualizada (demo)' });
+    }
+    try {
+      const response = await api.post('/api/auth/change-password', { currentPassword, newPassword });
+      return response.data;
+    } catch (error) {
+      console.error('Change password error:', error);
+      throw error;
+    }
   }
 };
 

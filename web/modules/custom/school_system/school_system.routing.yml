@@ -289,6 +289,14 @@ school_system.api.auth.me:
   requirements:
     _user_is_logged_in: 'TRUE'
 
+school_system.api.auth.change_password:
+  path: '/api/auth/change-password'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\AuthApiController::changePassword'
+  methods: [POST]
+  requirements:
+    _user_is_logged_in: 'TRUE'
+
 school_system.api.debug.session:
   path: '/api/debug/session'
   defaults:

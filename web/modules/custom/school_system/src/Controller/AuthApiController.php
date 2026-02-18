@@ -122,6 +122,45 @@ class AuthApiController extends ControllerBase {
   }
 
   /**
+   * Change password endpoint.
+   */
+  public function changePassword(Request $request) {
+    $current_user = \Drupal::currentUser();
+
+    if ($current_user->isAnonymous()) {
+      return new JsonResponse(['success' => FALSE, 'error' => 'No autorizado'], 401);
+    }
+
+    $data = json_decode($request->getContent(), TRUE);
+    $current_password = $data['currentPassword'] ?? '';
+    $new_password     = $data['newPassword'] ?? '';
+
+    if (empty($current_password) || empty($new_password)) {
+      return new JsonResponse(['success' => FALSE, 'error' => 'Contraseña actual y nueva contraseña son requeridas'], 400);
+    }
+
+    if (strlen($new_password) < 6) {
+      return new JsonResponse(['success' => FALSE, 'error' => 'La nueva contraseña debe tener al menos 6 caracteres'], 400);
+    }
+
+    $user = User::load($current_user->id());
+
+    if (!$user) {
+      return new JsonResponse(['success' => FALSE, 'error' => 'Usuario no encontrado'], 404);
+    }
+
+    $password_hasher = \Drupal::service('password');
+    if (!$password_hasher->check($current_password, $user->getPassword())) {
+      return new JsonResponse(['success' => FALSE, 'error' => 'La contraseña actual es incorrecta'], 400);
+    }
+
+    $user->setPassword($new_password);
+    $user->save();
+
+    return new JsonResponse(['success' => TRUE, 'message' => 'Contraseña actualizada correctamente']);
+  }
+
+  /**
    * Logout endpoint.
    */
   public function logout(Request $request) {
