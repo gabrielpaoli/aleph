@@ -32,24 +32,18 @@ class SchoolSystemCommands extends DrushCommands {
     // Limpiar datos existentes
     $this->cleanExistingData();
 
-    // Crear cursos suficientes para 1000 estudiantes (máximo 24 por curso)
-    $this->output()->writeln('📖 Creating courses...');
+    // Crear todos los cursos posibles (años 1-5, letras A-D, turnos)
+    $this->output()->writeln('📖 Creating courses for all possible combinations...');
     $max_students_per_course = 24;
     $total_students = 1000;
-    $courses_needed = ceil($total_students / $max_students_per_course);
-    
+
     $courses = [];
     $course_letters = ['A', 'B', 'C', 'D'];
     $shifts = ['Mañana', 'Tarde', 'Noche'];
-    $course_index = 0;
 
     foreach ($shifts as $shift) {
-      for ($year = 1; $year <= 5 && $course_index < $courses_needed; $year++) {
+      for ($year = 1; $year <= 5; $year++) {
         foreach ($course_letters as $letter) {
-          if ($course_index >= $courses_needed) {
-            break 3;
-          }
-
           $course_name = "{$year}{$letter}";
           $courses[] = [
             'id' => $this->createCourse($course_name, $shift),
@@ -57,7 +51,6 @@ class SchoolSystemCommands extends DrushCommands {
             'shift' => $shift,
             'student_count' => 0,
           ];
-          $course_index++;
         }
       }
     }
@@ -173,16 +166,37 @@ class SchoolSystemCommands extends DrushCommands {
     // Crear directivo
     $this->createUser('directivo@escuela1.com', '1234', 'directivo');
     
-    // Crear docentes con materias asignadas (usar las primeras materias creadas)
+    // Crear un docente por cada materia y asignarle esa materia
+    $nombres = ['Ana', 'Carlos', 'María', 'José', 'Laura', 'Diego', 'Sofía', 'Andrés',
+                'Valeria', 'Martín', 'Lucía', 'Pablo', 'Florencia', 'Santiago', 'Camila',
+                'Federico', 'Natalia', 'Rodrigo', 'Gabriela', 'Tomás'];
+    $apellidos = ['García', 'Fernández', 'López', 'Martínez', 'González', 'Pérez',
+                  'Rodríguez', 'Sánchez', 'Ramírez', 'Torres', 'Flores', 'Rivera',
+                  'Morales', 'Herrera', 'Medina', 'Castro', 'Romero', 'Vargas',
+                  'Delgado', 'Ortiz'];
+
     if (!empty($all_subjects)) {
-      $this->createUser('roberto.diaz@escuela1.com', '1234', 'docente', [
-        $all_subjects[0], // Primera materia
-        $all_subjects[1], // Segunda materia
-      ]);
-      $this->createUser('laura.morales@escuela1.com', '1234', 'docente', [
-        $all_subjects[2], // Tercera materia
-        $all_subjects[3], // Cuarta materia
-      ]);
+      foreach ($all_subjects as $idx => $subject_id) {
+        $subject = Node::load($subject_id);
+        $subject_title = $subject ? $subject->getTitle() : "subject{$subject_id}";
+
+        // Normalizar título para email (a-z0-9 y puntos)
+        $local_part = strtolower(preg_replace('/[^a-z0-9]+/i', '.', $subject_title));
+        $local_part = trim($local_part, '.');
+        if (empty($local_part)) {
+          $local_part = 'subject' . $subject_id;
+        }
+
+        // Incluir el id de la materia en el email para garantizar unicidad
+        $email = "docente.{$local_part}.{$subject_id}@escuela1.com";
+
+        // Nombre y apellido aleatorios
+        $first_name = $nombres[$idx % count($nombres)];
+        $last_name  = $apellidos[$idx % count($apellidos)];
+
+        // Crear el usuario docente con una sola materia asignada
+        $this->createUser($email, '1234', 'docente', [$subject_id], $first_name, $last_name);
+      }
     }
 
     foreach ($students as $student) {
@@ -780,7 +794,7 @@ class SchoolSystemCommands extends DrushCommands {
     return date('Y-m-d', $timestamp);
   }
 
-  private function createUser($email, $password, $role, $subject_ids = []) {
+  private function createUser($email, $password, $role, $subject_ids = [], $nombre = '', $apellido = '') {
     $existing = \Drupal::entityTypeManager()
       ->getStorage('user')
       ->loadByProperties(['mail' => $email]);
@@ -804,6 +818,14 @@ class SchoolSystemCommands extends DrushCommands {
         $subjects_refs[] = ['target_id' => $subject_id];
       }
       $user->set('field_subjects_ref', $subjects_refs);
+    }
+
+    // Asignar nombre y apellido si se proporcionaron
+    if (!empty($nombre)) {
+      $user->set('field_nombre', $nombre);
+    }
+    if (!empty($apellido)) {
+      $user->set('field_apellido', $apellido);
     }
 
     $user->save();

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import StudentForm from './StudentForm';
 import CourseForm from './CourseForm';
 import SubjectForm from './SubjectForm';
-import TeacherManagement from './TeacherManagement';
+import TeacherForm from './TeacherForm';
 import GradeManagement from './GradeManagement';
 import UserManagement from './UserManagement';
 import NoteForm from './NoteForm';
@@ -14,16 +14,21 @@ import { useAuth } from '../../context/AuthContext';
 const AdminPanel = () => {
   const { user } = useAuth();
 
-  const allTabs = [
+  const baseTabs = [
     { id: 'students', label: 'Estudiantes', icon: '👨‍🎓', component: StudentForm },
     { id: 'courses', label: 'Cursos', icon: '📚', component: CourseForm },
     { id: 'subjects', label: 'Materias', icon: '📖', component: SubjectForm },
     { id: 'grades', label: 'Calificaciones', icon: '⭐', component: GradeManagement },
-    { id: 'teachers', label: 'Docentes', icon: '👨‍🏫', component: TeacherManagement },
+    { id: 'teachers', label: 'Docentes', icon: '👨‍🏫', component: TeacherForm },
     { id: 'users', label: 'Usuarios', icon: '👥', component: UserManagement },
     { id: 'notes', label: 'Notas', icon: '📝', component: NoteForm },
-    { id: 'whatsapp', label: 'WhatsApp', icon: '💬', component: WhatsappSettings },
   ];
+
+  // Only show WhatsApp tab to directivo
+  const allTabs = [...baseTabs];
+  if (user?.role === 'directivo') {
+    allTabs.push({ id: 'whatsapp', label: 'WhatsApp', icon: '💬', component: WhatsappSettings });
+  }
 
   // Docente solo ve Calificaciones
   const tabs = user?.role === 'docente'

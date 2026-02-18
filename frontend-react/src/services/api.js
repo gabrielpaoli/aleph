@@ -844,9 +844,16 @@ export const teacherService = {
     }
     console.log('🌐 Fetching teachers from API');
     try {
-      const response = await api.get('/api/teachers');
+      const response = await api.get('/api/docentes');
       console.log('✅ Teachers from API:', response.data);
-      return response.data;
+      const list = response.data?.teachers ?? response.data;
+      return (Array.isArray(list) ? list : []).map(u => ({
+        ...u,
+        firstName:  u.firstName || '',
+        apellido:   u.apellido  || '',
+        email:      u.email     || '',
+        subjectIds: u.subjectIds || [],
+      }));
     } catch (error) {
       console.error('❌ Error fetching teachers:', error);
       throw error;
@@ -877,7 +884,7 @@ export const teacherService = {
     }
     console.log('🌐 Creating teacher in API');
     try {
-      const response = await api.post('/api/teachers', teacherData);
+      const response = await api.post('/api/docentes', teacherData);
       console.log('✅ Teacher created:', response.data);
       return response.data;
     } catch (error) {
@@ -897,7 +904,7 @@ export const teacherService = {
     }
     console.log('🌐 Updating teacher:', id);
     try {
-      const response = await api.patch(`/api/teachers/${id}`, teacherData);
+      const response = await api.patch(`/api/docentes/${id}`, teacherData);
       console.log('✅ Teacher updated:', response.data);
       return response.data;
     } catch (error) {

@@ -43,30 +43,30 @@ class UserApiController extends ControllerBase {
             $name = $user->getDisplayName();
             $email = $user->getEmail();
             
-            $first_name = 'Unknown';
-            $last_name = '';
-            
-            // Try to extract from name first
-            if ($name && $name !== '') {
-              $parts = explode(' ', trim($name));
-              $first_name = $parts[0] ?? 'Unknown';
-              $last_name = implode(' ', array_slice($parts, 1));
+            // Leer nombre y apellido desde los campos dedicados
+            $first_name = '';
+            $last_name  = '';
+            if ($user->hasField('field_nombre') && !$user->get('field_nombre')->isEmpty()) {
+              $first_name = $user->get('field_nombre')->value;
             }
-            // Otherwise try to extract from email
-            else if ($email && $email !== '') {
+            if ($user->hasField('field_apellido') && !$user->get('field_apellido')->isEmpty()) {
+              $last_name = $user->get('field_apellido')->value;
+            }
+
+            // Fallback: derivar del email si los campos están vacíos
+            if (empty($first_name) && empty($last_name)) {
               $email_username = explode('@', $email)[0];
               $parts = explode('.', $email_username);
-              $first_name = $parts[0] ?? 'Unknown';
-              $last_name = $parts[1] ?? '';
+              $first_name = ucfirst($parts[1] ?? $parts[0] ?? 'Unknown');
+              $last_name  = '';
             }
-            
+
             $user_data = [
-              'id' => (int)$user->id(),
-              'name' => $name,
-              'email' => $email,
+              'id'        => (int)$user->id(),
+              'email'     => $email,
               'firstName' => $first_name,
-              'lastName' => $last_name,
-              'roles' => $user->getRoles(),
+              'apellido'  => $last_name,
+              'roles'     => $user->getRoles(),
             ];
 
             // Add subjects for docente role
@@ -111,14 +111,16 @@ class UserApiController extends ControllerBase {
         ], 400);
       }
 
-      $email = $data['email'] ?? NULL;
-      $password = $data['password'] ?? NULL;
-      $name = $data['name'] ?? $email;
+      $email      = $data['email']      ?? NULL;
+      $first_name = $data['firstName']   ?? '';
+      $last_name  = $data['apellido']    ?? '';
+      $password   = $data['password']    ?? 'Docente1234!';
+      $name       = $data['name']        ?? $email;
 
-      if (!$email || !$password || !$name) {
+      if (!$email) {
         return new JsonResponse([
           'success' => FALSE,
-          'error' => 'Missing required fields: email, password, name',
+          'error'   => 'Missing required field: email',
         ], 400);
       }
 
@@ -130,39 +132,41 @@ class UserApiController extends ControllerBase {
       if (!empty($existing)) {
         return new JsonResponse([
           'success' => FALSE,
-          'error' => 'User with this email already exists',
+          'error'   => 'User with this email already exists',
         ], 409);
       }
 
       // Create user with docente role
       $user = User::create([
-        'name' => $name,
-        'mail' => $email,
-        'pass' => $password,
+        'name'   => $name,
+        'mail'   => $email,
+        'pass'   => $password,
         'status' => TRUE,
       ]);
 
       $user->addRole('docente');
 
+      if (!empty($first_name)) {
+        $user->set('field_nombre', $first_name);
+      }
+      if (!empty($last_name)) {
+        $user->set('field_apellido', $last_name);
+      }
+
       // Add subjects if provided
-      if (isset($data['subjectIds']) && !empty($data['subjectIds'])) {
-        $subject_ids = $data['subjectIds'];
-        if (!is_array($subject_ids)) {
-          $subject_ids = [$subject_ids];
-        }
-        $user->set('field_subjects_ref', $subject_ids);
+      if (!empty($data['subjectIds']) && is_array($data['subjectIds'])) {
+        $user->set('field_subjects_ref', $data['subjectIds']);
       }
 
       $user->save();
 
-      $user_response = [
-        'success' => TRUE,
-        'id' => (int)$user->id(),
-        'name' => $user->getDisplayName(),
-        'email' => $user->getEmail(),
-      ];
-
-      return new JsonResponse($user_response, 201);
+      return new JsonResponse([
+        'success'   => TRUE,
+        'id'        => (int)$user->id(),
+        'email'     => $user->getEmail(),
+        'firstName' => $first_name,
+        'apellido'  => $last_name,
+      ], 201);
 
     } catch (\Throwable $e) {
       \Drupal::logger('school_system')->error('createTeacher error: @msg', [
@@ -228,6 +232,14 @@ class UserApiController extends ControllerBase {
         $user->set('mail', $data['email']);
       }
 
+      // Actualizar nombre y apellido
+      if (array_key_exists('firstName', $data)) {
+        $user->set('field_nombre', $data['firstName']);
+      }
+      if (array_key_exists('apellido', $data)) {
+        $user->set('field_apellido', $data['apellido']);
+      }
+
       if (isset($data['password']) && !empty($data['password'])) {
         $user->setPassword($data['password']);
       }
@@ -238,14 +250,13 @@ class UserApiController extends ControllerBase {
 
       $user->save();
 
-      $user_response = [
-        'success' => TRUE,
-        'id' => (int)$user->id(),
-        'name' => $user->getDisplayName(),
-        'email' => $user->getEmail(),
-      ];
-
-      return new JsonResponse($user_response);
+      return new JsonResponse([
+        'success'   => TRUE,
+        'id'        => (int)$user->id(),
+        'email'     => $user->getEmail(),
+        'firstName' => $user->hasField('field_nombre')   ? $user->get('field_nombre')->value   : '',
+        'apellido'  => $user->hasField('field_apellido') ? $user->get('field_apellido')->value : '',
+      ]);
 
     } catch (\Throwable $e) {
       \Drupal::logger('school_system')->error('updateTeacher error: @msg', [
