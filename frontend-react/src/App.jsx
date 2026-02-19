@@ -12,6 +12,7 @@ import StudentProfile from './components/student/StudentProfile';
 import AdminPanel from './components/admin/AdminPanel';
 import ProfileSettings from './components/common/ProfileSettings';
 import ResetPassword from './components/common/ResetPassword';
+import PreceptorGuide from './components/common/PreceptorGuide';
 
 const PrivateRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
@@ -52,6 +53,7 @@ const AppRoutes = () => {
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/estudiante/:studentId" element={<StudentProfile />} />
             <Route path="/perfil" element={<ProfileSettings />} />
+            <Route path="/guia" element={<PreceptorGuide />} />
           </>
         )}
 

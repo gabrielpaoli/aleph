@@ -39,6 +39,12 @@ const Navbar = () => {
                 >
                   ⚙️ Administración
                 </Link>
+                <Link
+                  to="/guia"
+                  className="px-4 py-2 rounded-lg hover:bg-white/20 transition-colors font-medium"
+                >
+                  📘 Guía
+                </Link>
               </div>
             )}
 
