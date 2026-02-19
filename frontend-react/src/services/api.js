@@ -604,6 +604,45 @@ export const authService = {
       console.error('Get current user error:', error);
       throw error;
     }
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    if (USE_DUMMY_DATA) {
+      return Promise.resolve({ success: true, message: 'Contraseña actualizada (demo)' });
+    }
+    try {
+      const response = await api.post('/api/auth/change-password', { currentPassword, newPassword });
+      return response.data;
+    } catch (error) {
+      console.error('Change password error:', error);
+      throw error;
+    }
+  },
+
+  forgotPassword: async (email) => {
+    if (USE_DUMMY_DATA) {
+      return Promise.resolve({ success: true, message: 'Si el correo existe en el sistema, recibirás un enlace para restablecer tu contraseña.' });
+    }
+    try {
+      const response = await api.post('/api/auth/forgot-password', { email });
+      return response.data;
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      throw error;
+    }
+  },
+
+  resetPassword: async (uid, timestamp, hash, newPassword) => {
+    if (USE_DUMMY_DATA) {
+      return Promise.resolve({ success: true, message: 'Contraseña actualizada correctamente. Ya podés iniciar sesión.' });
+    }
+    try {
+      const response = await api.post('/api/auth/reset-password', { uid, timestamp, hash, newPassword });
+      return response.data;
+    } catch (error) {
+      console.error('Reset password error:', error);
+      throw error;
+    }
   }
 };
 
@@ -844,9 +883,16 @@ export const teacherService = {
     }
     console.log('🌐 Fetching teachers from API');
     try {
-      const response = await api.get('/api/teachers');
+      const response = await api.get('/api/docentes');
       console.log('✅ Teachers from API:', response.data);
-      return response.data;
+      const list = response.data?.teachers ?? response.data;
+      return (Array.isArray(list) ? list : []).map(u => ({
+        ...u,
+        firstName:  u.firstName || '',
+        apellido:   u.apellido  || '',
+        email:      u.email     || '',
+        subjectIds: u.subjectIds || [],
+      }));
     } catch (error) {
       console.error('❌ Error fetching teachers:', error);
       throw error;
@@ -877,7 +923,7 @@ export const teacherService = {
     }
     console.log('🌐 Creating teacher in API');
     try {
-      const response = await api.post('/api/teachers', teacherData);
+      const response = await api.post('/api/docentes', teacherData);
       console.log('✅ Teacher created:', response.data);
       return response.data;
     } catch (error) {
@@ -897,7 +943,7 @@ export const teacherService = {
     }
     console.log('🌐 Updating teacher:', id);
     try {
-      const response = await api.patch(`/api/teachers/${id}`, teacherData);
+      const response = await api.patch(`/api/docentes/${id}`, teacherData);
       console.log('✅ Teacher updated:', response.data);
       return response.data;
     } catch (error) {
@@ -1263,5 +1309,54 @@ export const excludedDateService = {
       throw error;
     }
   }
+};
+
+// ============ WHATSAPP NOTIFIER ============
+export const whatsappService = {
+  /**
+   * Check if WhatsApp is configured for this school.
+   * Returns { enabled: bool, school_name: string, from_number_configured: bool }
+   */
+  getStatus: async () => {
+    try {
+      const response = await api.get('/api/whatsapp/status');
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching WhatsApp status:', error);
+      return { enabled: false };
+    }
+  },
+
+  /**
+   * Send WhatsApp absence notifications.
+   * @param {string} date  - 'YYYY-MM-DD'
+   * @param {number[]} studentIds
+   */
+  sendAbsenceMessages: async (date, studentIds) => {
+    console.log('📱 Sending WhatsApp absence messages for', studentIds.length, 'students');
+    const response = await api.post('/api/whatsapp/send-absence', { date, studentIds });
+    return response.data;
+  },
+
+  /**
+   * Send a WhatsApp note to a student or a whole course.
+   * @param {{ title: string, content: string, studentId?: number, courseId?: number }} noteData
+   */
+  sendNoteMessage: async (noteData) => {
+    console.log('📱 Sending WhatsApp note:', noteData.title);
+    const response = await api.post('/api/whatsapp/send-note', noteData);
+    return response.data;
+  },
+
+  /**
+   * Get / save WhatsApp settings (school-level config via Drupal admin form).
+   * The actual settings are changed via the Drupal admin at /admin/config/whatsapp-notifier.
+   * This helper POSTs to a settings endpoint if implemented, otherwise just fetches status.
+   */
+  saveSettings: async (settings) => {
+    console.log('⚙️ Saving WhatsApp settings via API');
+    const response = await api.post('/api/whatsapp/settings', settings);
+    return response.data;
+  },
 };
 

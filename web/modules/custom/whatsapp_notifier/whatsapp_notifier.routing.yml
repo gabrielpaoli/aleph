@@ -1,0 +1,38 @@
+# WhatsApp Notifier – Routing
+
+# Admin config page
+whatsapp_notifier.settings:
+  path: '/admin/config/whatsapp-notifier'
+  defaults:
+    _form: '\Drupal\whatsapp_notifier\Form\WhatsappSettingsForm'
+    _title: 'Configuración de WhatsApp Notifier'
+  methods: [GET, POST]
+  requirements:
+    _permission: 'administer whatsapp notifier'
+
+# API – send absence WhatsApp messages
+whatsapp_notifier.api.send_absence:
+  path: '/api/whatsapp/send-absence'
+  defaults:
+    _controller: '\Drupal\whatsapp_notifier\Controller\WhatsappApiController::sendAbsenceMessages'
+  methods: [POST]
+  requirements:
+    _access: 'TRUE'
+
+# API – send note WhatsApp messages
+whatsapp_notifier.api.send_note:
+  path: '/api/whatsapp/send-note'
+  defaults:
+    _controller: '\Drupal\whatsapp_notifier\Controller\WhatsappApiController::sendNoteMessages'
+  methods: [POST]
+  requirements:
+    _access: 'TRUE'
+
+# API – check if WhatsApp is configured / enabled
+whatsapp_notifier.api.status:
+  path: '/api/whatsapp/status'
+  defaults:
+    _controller: '\Drupal\whatsapp_notifier\Controller\WhatsappApiController::status'
+  methods: [GET]
+  requirements:
+    _access: 'TRUE'

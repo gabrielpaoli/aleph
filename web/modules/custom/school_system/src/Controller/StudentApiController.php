@@ -98,6 +98,7 @@ class StudentApiController extends ControllerBase {
         'field_first_name' => $data['firstName'] ?? '',
         'field_last_name' => $data['lastName'] ?? '',
         'field_parent_email' => $parent_email,
+        'field_parent_phone' => $data['parentPhone'] ?? '',
         'field_course_ref' => isset($data['courseId']) ? ['target_id' => $data['courseId']] : NULL,
         'field_legajo' => $data['legajo'] ?? rand(1000, 9999),
         'uid' => $current_user->id(), // Asignar el usuario actual como autor
@@ -153,6 +154,9 @@ class StudentApiController extends ControllerBase {
       }
       if (isset($data['parentEmail'])) {
         $node->set('field_parent_email', $data['parentEmail']);
+      }
+      if (isset($data['parentPhone'])) {
+        $node->set('field_parent_phone', $data['parentPhone']);
       }
 
       // Update title
@@ -213,6 +217,9 @@ class StudentApiController extends ControllerBase {
       }
       if (isset($data['email'])) {
         $node->set('field_parent_email', $data['email']);
+      }
+      if (isset($data['parentPhone'])) {
+        $node->set('field_parent_phone', $data['parentPhone']);
       }
       if (isset($data['courseId'])) {
         $node->set('field_course_ref', ['target_id' => $data['courseId']]);
@@ -340,6 +347,7 @@ class StudentApiController extends ControllerBase {
       'firstName' => $firstName,
       'lastName' => $lastName,
       'email' => $node->get('field_parent_email')->value ?? '',
+      'parentPhone' => $node->get('field_parent_phone')->value ?? '',
       'courseId' => $course_ref ? (int) $course_ref : NULL,
       'legajo' => (int) ($node->get('field_legajo')->value ?? 0),
     ];

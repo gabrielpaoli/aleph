@@ -1,7 +1,7 @@
 // src/App.jsx
 
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/common/Login';
 import Navbar from './components/common/Navbar';
@@ -10,6 +10,9 @@ import AbsenceNotification from './components/preceptor/AbsenceNotification';
 import StudentDashboard from './components/parent/StudentDashboard';
 import StudentProfile from './components/student/StudentProfile';
 import AdminPanel from './components/admin/AdminPanel';
+import ProfileSettings from './components/common/ProfileSettings';
+import ResetPassword from './components/common/ResetPassword';
+import PreceptorGuide from './components/common/PreceptorGuide';
 
 const PrivateRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
@@ -27,6 +30,12 @@ const PrivateRoute = ({ children, allowedRoles }) => {
 
 const AppRoutes = () => {
   const { user } = useAuth();
+  const location = useLocation();
+
+  // Public route: accessible without login
+  if (location.pathname === '/reset-password') {
+    return <ResetPassword />;
+  }
 
   if (!user) {
     return <Login />;
@@ -43,6 +52,8 @@ const AppRoutes = () => {
             <Route path="/notificaciones" element={<AbsenceNotification />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/estudiante/:studentId" element={<StudentProfile />} />
+            <Route path="/perfil" element={<ProfileSettings />} />
+            <Route path="/guia" element={<PreceptorGuide />} />
           </>
         )}
 
@@ -51,6 +62,7 @@ const AppRoutes = () => {
             <Route path="/" element={<Navigate to="/admin" />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/estudiante/:studentId" element={<StudentProfile />} />
+            <Route path="/perfil" element={<ProfileSettings />} />
           </>
         )}
 
@@ -60,6 +72,7 @@ const AppRoutes = () => {
             <Route path="/asistencias" element={<AttendanceTable />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/estudiante/:studentId" element={<StudentProfile />} />
+            <Route path="/perfil" element={<ProfileSettings />} />
           </>
         )}
 
@@ -68,6 +81,7 @@ const AppRoutes = () => {
             <Route path="/" element={<Navigate to={`/estudiante/${user.studentIds?.[0] || user.studentId}`} />} />
             <Route path="/estudiante" element={<Navigate to={`/estudiante/${user.studentIds?.[0] || user.studentId}`} />} />
             <Route path="/estudiante/:studentId" element={<StudentProfile />} />
+            <Route path="/perfil" element={<ProfileSettings />} />
           </>
         )}
 

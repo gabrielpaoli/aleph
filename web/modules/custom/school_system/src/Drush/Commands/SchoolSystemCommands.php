@@ -32,24 +32,18 @@ class SchoolSystemCommands extends DrushCommands {
     // Limpiar datos existentes
     $this->cleanExistingData();
 
-    // Crear cursos suficientes para 50 estudiantes (máximo 24 por curso)
-    $this->output()->writeln('📖 Creating courses...');
+    // Crear todos los cursos posibles (años 1-5, letras A-D, turnos)
+    $this->output()->writeln('📖 Creating courses for all possible combinations...');
     $max_students_per_course = 24;
-    $total_students = 50;
-    $courses_needed = ceil($total_students / $max_students_per_course); // Aproximadamente 21 cursos
-    
+    $total_students = 1000;
+
     $courses = [];
-    $course_letters = ['A', 'B'];
+    $course_letters = ['A', 'B', 'C', 'D'];
     $shifts = ['Mañana', 'Tarde', 'Noche'];
-    $course_index = 0;
 
     foreach ($shifts as $shift) {
-      for ($year = 1; $year <= 5 && $course_index < $courses_needed; $year++) {
+      for ($year = 1; $year <= 5; $year++) {
         foreach ($course_letters as $letter) {
-          if ($course_index >= $courses_needed) {
-            break 3;
-          }
-
           $course_name = "{$year}{$letter}";
           $courses[] = [
             'id' => $this->createCourse($course_name, $shift),
@@ -57,7 +51,6 @@ class SchoolSystemCommands extends DrushCommands {
             'shift' => $shift,
             'student_count' => 0,
           ];
-          $course_index++;
         }
       }
     }
@@ -71,10 +64,10 @@ class SchoolSystemCommands extends DrushCommands {
     $subject_names = ['Matemáticas', 'Lengua', 'Historia', 'Geografía', 'Inglés', 'Ciencias Naturales', 'Física', 'Química'];
     $all_subjects = [];
     
-    // Crear materias para los primeros 4 cursos
-    for ($i = 0; $i < min(4, count($courses)); $i++) {
+    // Crear materias para todos los cursos
+    foreach ($courses as $course) {
       foreach ($subject_names as $subject_name) {
-        $all_subjects[] = $this->createSubject($subject_name, $courses[$i]['id']);
+        $all_subjects[] = $this->createSubject($subject_name, $course['id']);
       }
     }
     
@@ -119,11 +112,11 @@ class SchoolSystemCommands extends DrushCommands {
       $courses[$current_course_index]['student_count']++;
     }
 
-    // Generar 490 estudiantes adicionales
+    // Generar 990 estudiantes adicionales
     $nombres = ['Lucas', 'Martina', 'Santiago', 'Valentina', 'Mateo', 'Emma', 'Benjamín', 'Isabella', 'Nicolás', 'Mía', 'Sebastián', 'Sofía', 'Joaquín', 'Olivia', 'Tomás', 'Catalina', 'Agustín', 'Emilia', 'Felipe', 'Abril'];
     $apellidos = ['González', 'Rodríguez', 'Martínez', 'López', 'Fernández', 'García', 'Sánchez', 'Romero', 'Torres', 'Díaz', 'Morales', 'Álvarez', 'Gómez', 'Ruiz', 'Pérez', 'Hernández', 'Castro', 'Vargas', 'Silva', 'Ramos'];
 
-    for ($i = 11; $i <= 50; $i++) {
+    for ($i = 11; $i <= $total_students; $i++) {
       // Buscar curso con espacio disponible
       while ($current_course_index < count($courses) && $courses[$current_course_index]['student_count'] >= $max_students_per_course) {
         $current_course_index++;
@@ -173,16 +166,37 @@ class SchoolSystemCommands extends DrushCommands {
     // Crear directivo
     $this->createUser('directivo@escuela1.com', '1234', 'directivo');
     
-    // Crear docentes con materias asignadas (usar las primeras materias creadas)
+    // Crear un docente por cada materia y asignarle esa materia
+    $nombres = ['Ana', 'Carlos', 'María', 'José', 'Laura', 'Diego', 'Sofía', 'Andrés',
+                'Valeria', 'Martín', 'Lucía', 'Pablo', 'Florencia', 'Santiago', 'Camila',
+                'Federico', 'Natalia', 'Rodrigo', 'Gabriela', 'Tomás'];
+    $apellidos = ['García', 'Fernández', 'López', 'Martínez', 'González', 'Pérez',
+                  'Rodríguez', 'Sánchez', 'Ramírez', 'Torres', 'Flores', 'Rivera',
+                  'Morales', 'Herrera', 'Medina', 'Castro', 'Romero', 'Vargas',
+                  'Delgado', 'Ortiz'];
+
     if (!empty($all_subjects)) {
-      $this->createUser('roberto.diaz@escuela1.com', '1234', 'docente', [
-        $all_subjects[0], // Primera materia
-        $all_subjects[1], // Segunda materia
-      ]);
-      $this->createUser('laura.morales@escuela1.com', '1234', 'docente', [
-        $all_subjects[2], // Tercera materia
-        $all_subjects[3], // Cuarta materia
-      ]);
+      foreach ($all_subjects as $idx => $subject_id) {
+        $subject = Node::load($subject_id);
+        $subject_title = $subject ? $subject->getTitle() : "subject{$subject_id}";
+
+        // Normalizar título para email (a-z0-9 y puntos)
+        $local_part = strtolower(preg_replace('/[^a-z0-9]+/i', '.', $subject_title));
+        $local_part = trim($local_part, '.');
+        if (empty($local_part)) {
+          $local_part = 'subject' . $subject_id;
+        }
+
+        // Incluir el id de la materia en el email para garantizar unicidad
+        $email = "docente.{$local_part}.{$subject_id}@escuela1.com";
+
+        // Nombre y apellido aleatorios
+        $first_name = $nombres[$idx % count($nombres)];
+        $last_name  = $apellidos[$idx % count($apellidos)];
+
+        // Crear el usuario docente con una sola materia asignada
+        $this->createUser($email, '1234', 'docente', [$subject_id], $first_name, $last_name);
+      }
     }
 
     foreach ($students as $student) {
@@ -353,9 +367,13 @@ class SchoolSystemCommands extends DrushCommands {
           return;
         }
 
-        // Delete related content
+        // Delete attendance from custom table.
+        \Drupal::database()->delete('school_system_attendance')
+          ->condition('student_id', (int) $student_id)
+          ->execute();
+
+        // Delete related node-based content
         $types = [
-          'attendance',
           'grade',
           'period_grade',
           'note',
@@ -645,7 +663,6 @@ class SchoolSystemCommands extends DrushCommands {
       'student' => 'Students',
       'teacher' => 'Teachers',
       'grade' => 'Grades',
-      'attendance' => 'Attendance Records',
       'note' => 'Notes',
     ];
 
@@ -656,11 +673,22 @@ class SchoolSystemCommands extends DrushCommands {
       $count = $query->count()->execute();
       $this->output()->writeln("   $label: $count");
     }
+
+    // Attendance from custom table.
+    $att_count = (int) \Drupal::database()
+      ->select('school_system_attendance', 'a')
+      ->countQuery()
+      ->execute()
+      ->fetchField();
+    $this->output()->writeln("   Attendance Records: $att_count");
   }
 
   // Métodos privados helper
   private function cleanExistingData() {
-    $types = ['attendance', 'grade', 'note', 'student', 'teacher', 'subject', 'course'];
+    // Truncate custom attendance table.
+    \Drupal::database()->truncate('school_system_attendance')->execute();
+
+    $types = ['grade', 'note', 'student', 'teacher', 'subject', 'course'];
 
     foreach ($types as $type) {
       $query = \Drupal::entityQuery('node')
@@ -766,7 +794,7 @@ class SchoolSystemCommands extends DrushCommands {
     return date('Y-m-d', $timestamp);
   }
 
-  private function createUser($email, $password, $role, $subject_ids = []) {
+  private function createUser($email, $password, $role, $subject_ids = [], $nombre = '', $apellido = '') {
     $existing = \Drupal::entityTypeManager()
       ->getStorage('user')
       ->loadByProperties(['mail' => $email]);
@@ -792,6 +820,14 @@ class SchoolSystemCommands extends DrushCommands {
       $user->set('field_subjects_ref', $subjects_refs);
     }
 
+    // Asignar nombre y apellido si se proporcionaron
+    if (!empty($nombre)) {
+      $user->set('field_nombre', $nombre);
+    }
+    if (!empty($apellido)) {
+      $user->set('field_apellido', $apellido);
+    }
+
     $user->save();
   }
 
@@ -806,8 +842,10 @@ class SchoolSystemCommands extends DrushCommands {
       $excluded_date_strings[] = $excluded->get('field_excluded_date')->value;
     }
 
+    $db = \Drupal::database();
     $current_date = clone $start_date;
     $count = 0;
+    $now = time();
 
     while ($current_date <= $end_date) {
       $day_of_week = (int) $current_date->format('N');
@@ -835,15 +873,16 @@ class SchoolSystemCommands extends DrushCommands {
           $status = 'half_absent';
         }
 
-        $node = Node::create([
-          'type' => 'attendance',
-          'title' => 'Attendance ' . $date_string,
-          'field_student_ref' => ['target_id' => $student->id()],
-          'field_date' => $date_string,
-          'field_status' => $status,
-          'status' => 1,
-        ]);
-        $node->save();
+        $db->merge('school_system_attendance')
+          ->keys([
+            'student_id' => (int) $student->id(),
+            'date' => $date_string,
+          ])
+          ->fields([
+            'status' => $status,
+            'created' => $now,
+          ])
+          ->execute();
         $count++;
       }
 

@@ -11,6 +11,57 @@ use Drupal\field\Entity\FieldConfig;
 use Drupal\Core\Field\BaseFieldDefinition;
 
 /**
+ * Implements hook_schema().
+ */
+function school_system_schema() {
+  $schema['school_system_attendance'] = [
+    'description' => 'Lightweight attendance records (replaces attendance nodes).',
+    'fields' => [
+      'id' => [
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'student_id' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Node ID of the student.',
+      ],
+      'date' => [
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'description' => 'Date in YYYY-MM-DD format.',
+      ],
+      'status' => [
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => 'present',
+        'description' => 'present, absent, half_absent.',
+      ],
+      'created' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Unix timestamp of creation.',
+      ],
+    ],
+    'primary key' => ['id'],
+    'unique keys' => [
+      'student_date' => ['student_id', 'date'],
+    ],
+    'indexes' => [
+      'student_id' => ['student_id'],
+      'date' => ['date'],
+      'status' => ['status'],
+    ],
+  ];
+  return $schema;
+}
+
+/**
  * Implements hook_install().
  */
 function school_system_install() {
@@ -28,6 +79,9 @@ function school_system_install() {
 
   // Crear campo de materias para usuarios
   _school_system_create_user_subjects_field();
+
+  // Crear campos de nombre y apellido para usuarios
+  _school_system_create_user_name_fields();
 
   \Drupal::messenger()->addStatus(t('School System module installed successfully.'));
 }
@@ -122,6 +176,7 @@ function _school_system_create_fields() {
   _school_system_create_field('node', 'student', 'field_first_name', 'string', 'First Name', FALSE);
   _school_system_create_field('node', 'student', 'field_last_name', 'string', 'Last Name', FALSE);
   _school_system_create_field('node', 'student', 'field_parent_email', 'email', 'Parent Email', FALSE);
+  _school_system_create_field('node', 'student', 'field_parent_phone', 'string', 'Parent Phone (WhatsApp)', FALSE);
   _school_system_create_field('node', 'student', 'field_course_ref', 'entity_reference', 'Course', FALSE, [
     'target_type' => 'node',
     'handler_settings' => ['target_bundles' => ['course' => 'course']],
@@ -454,6 +509,44 @@ function _school_system_assign_permissions() {
 
 /**
  * Helper: Crear campo de materias para usuarios.
+ */
+/**
+ * Crea los campos field_nombre y field_apellido en la entidad usuario.
+ */
+function _school_system_create_user_name_fields() {
+  $fields = [
+    'field_nombre'   => 'Nombre',
+    'field_apellido' => 'Apellido',
+  ];
+
+  foreach ($fields as $field_name => $label) {
+    $field_storage = \Drupal\field\Entity\FieldStorageConfig::loadByName('user', $field_name);
+    if (!$field_storage) {
+      $field_storage = \Drupal\field\Entity\FieldStorageConfig::create([
+        'field_name'  => $field_name,
+        'entity_type' => 'user',
+        'type'        => 'string',
+        'cardinality' => 1,
+        'settings'    => ['max_length' => 255],
+      ]);
+      $field_storage->save();
+    }
+
+    $field = \Drupal\field\Entity\FieldConfig::loadByName('user', 'user', $field_name);
+    if (!$field) {
+      $field = \Drupal\field\Entity\FieldConfig::create([
+        'field_storage' => $field_storage,
+        'bundle'        => 'user',
+        'label'         => $label,
+        'required'      => FALSE,
+      ]);
+      $field->save();
+    }
+  }
+}
+
+/**
+ * Crea el campo field_subjects_ref en la entidad usuario.
  */
 function _school_system_create_user_subjects_field() {
   $field_storage = \Drupal\field\Entity\FieldStorageConfig::loadByName('user', 'field_subjects_ref');

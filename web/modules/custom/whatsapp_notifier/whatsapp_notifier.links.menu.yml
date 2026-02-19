@@ -1,0 +1,6 @@
+whatsapp_notifier.admin:
+  title: 'WhatsApp Notifier'
+  description: 'Configurar credenciales de Twilio para notificaciones por WhatsApp.'
+  parent: system.admin_config_services
+  route_name: whatsapp_notifier.settings
+  weight: 10

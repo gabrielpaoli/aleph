@@ -39,6 +39,12 @@ const Navbar = () => {
                 >
                   ⚙️ Administración
                 </Link>
+                <Link
+                  to="/guia"
+                  className="px-4 py-2 rounded-lg hover:bg-white/20 transition-colors font-medium"
+                >
+                  📘 Guía
+                </Link>
               </div>
             )}
 
@@ -81,6 +87,13 @@ const Navbar = () => {
                  '👨‍👩‍👦 Padre'}
               </div>
             </div>
+            <Link
+              to="/perfil"
+              className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors font-medium text-sm"
+              title="Mi Perfil"
+            >
+              ⚙️ Mi Perfil
+            </Link>
             <button
               onClick={logout}
               className="bg-rose-500 px-4 py-2 rounded-lg hover:bg-rose-600 transition-colors font-medium shadow-md"

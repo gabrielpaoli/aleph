@@ -1,0 +1,8 @@
+name: 'WhatsApp Notifier'
+type: module
+description: 'Sends WhatsApp notifications to parents via Twilio. Supports per-school API key configuration for Drupal multisite.'
+package: 'School System'
+core_version_requirement: ^10 || ^11
+dependencies:
+  - drupal:node
+  - school_system:school_system

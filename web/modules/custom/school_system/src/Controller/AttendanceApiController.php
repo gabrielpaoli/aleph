@@ -3,112 +3,111 @@
 namespace Drupal\school_system\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\node\Entity\Node;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Controller for Attendance API endpoints.
+ *
+ * Uses the lightweight custom table `school_system_attendance` instead of
+ * Drupal nodes for performance.
  */
 class AttendanceApiController extends ControllerBase {
 
   /**
-   * Get all attendance records.
+   * Get attendance records with optional filters.
    */
   public function getAll(Request $request) {
-    $query = \Drupal::entityQuery('node')
-      ->condition('type', 'attendance')
-      ->condition('status', 1)
-      ->accessCheck(FALSE);
+    $db = \Drupal::database();
+    $query = $db->select('school_system_attendance', 'a')
+      ->fields('a', ['id', 'student_id', 'date', 'status']);
 
-    // Filtros
+    // Filter by single student.
     $student_id = $request->query->get('studentId');
     if ($student_id) {
-      $query->condition('field_student_ref', $student_id);
+      $query->condition('a.student_id', (int) $student_id);
     }
 
+    // Filter by exact date.
     $date = $request->query->get('date');
     if ($date) {
-      $query->condition('field_date', $date);
+      $query->condition('a.date', $date);
     }
 
     $course_id = $request->query->get('courseId');
     $year = $request->query->get('year');
     $month = $request->query->get('month');
 
-    if ($course_id && $year && $month !== NULL) {
-      // Obtener estudiantes del curso
-      $student_query = \Drupal::entityQuery('node')
-        ->condition('type', 'student')
-        ->condition('field_course_ref', $course_id)
-        ->accessCheck(FALSE);
-      $student_ids = $student_query->execute();
-
-      if (!empty($student_ids)) {
-        $query->condition('field_student_ref', $student_ids, 'IN');
-
-        // Filtrar por mes y año
-        $month_padded = str_pad($month + 1, 2, '0', STR_PAD_LEFT);
-        $start_date = "$year-$month_padded-01";
-        $end_date = date("Y-m-t", strtotime($start_date));
-
-        $query->condition('field_date', $start_date, '>=');
-        $query->condition('field_date', $end_date, '<=');
+    if ($course_id) {
+      // Resolve student IDs belonging to this course.
+      $student_ids = $this->getStudentIdsByCourse((int) $course_id);
+      if (empty($student_ids)) {
+        return new JsonResponse([]);
       }
-    } elseif ($course_id && $year && $month === NULL) {
-      // Filtrar por curso y año completo (sin mes específico)
-      $student_query = \Drupal::entityQuery('node')
-        ->condition('type', 'student')
-        ->condition('field_course_ref', $course_id)
-        ->accessCheck(FALSE);
-      $student_ids = $student_query->execute();
-
-      if (!empty($student_ids)) {
-        $query->condition('field_student_ref', $student_ids, 'IN');
-
-        // Filtrar por año
-        $start_date = "$year-01-01";
-        $end_date = "$year-12-31";
-
-        $query->condition('field_date', $start_date, '>=');
-        $query->condition('field_date', $end_date, '<=');
-      }
+      $query->condition('a.student_id', $student_ids, 'IN');
     }
 
-    $nids = $query->execute();
-    $attendance = [];
+    if ($year && $month !== NULL && $month !== '') {
+      $month_padded = str_pad((int) $month + 1, 2, '0', STR_PAD_LEFT);
+      $start = "{$year}-{$month_padded}-01";
+      $end = date('Y-m-t', strtotime($start));
+      $query->condition('a.date', $start, '>=');
+      $query->condition('a.date', $end, '<=');
+    }
+    elseif ($year) {
+      $query->condition('a.date', "{$year}-01-01", '>=');
+      $query->condition('a.date', "{$year}-12-31", '<=');
+    }
 
-    foreach ($nids as $nid) {
-      $node = Node::load($nid);
-      if ($node) {
-        $attendance[] = $this->formatAttendance($node);
-      }
+    $results = $query->execute()->fetchAll();
+
+    $attendance = [];
+    foreach ($results as $row) {
+      $attendance[] = [
+        'id' => (int) $row->id,
+        'studentId' => (int) $row->student_id,
+        'date' => $row->date,
+        'status' => $row->status,
+      ];
     }
 
     return new JsonResponse($attendance);
   }
 
   /**
-   * Create attendance record.
+   * Create a single attendance record.
    */
   public function createAttendance(Request $request) {
     $data = json_decode($request->getContent(), TRUE);
-
     if (!$data) {
       return new JsonResponse(['error' => 'Invalid JSON'], 400);
     }
 
-    try {
-      $node = Node::create([
-        'type' => 'attendance',
-        'title' => 'Attendance ' . ($data['date'] ?? date('Y-m-d')),
-        'field_student_ref' => isset($data['studentId']) ? ['target_id' => $data['studentId']] : NULL,
-        'field_date' => $data['date'] ?? date('Y-m-d'),
-        'field_status' => $data['status'] ?? 'present',
-      ]);
-      $node->save();
+    $student_id = (int) ($data['studentId'] ?? 0);
+    $date = $data['date'] ?? date('Y-m-d');
+    $status = $data['status'] ?? 'present';
 
-      return new JsonResponse($this->formatAttendance($node), 201);
+    if (!$student_id) {
+      return new JsonResponse(['error' => 'studentId is required'], 400);
+    }
+
+    try {
+      $db = \Drupal::database();
+      $id = $db->insert('school_system_attendance')
+        ->fields([
+          'student_id' => $student_id,
+          'date' => $date,
+          'status' => $status,
+          'created' => time(),
+        ])
+        ->execute();
+
+      return new JsonResponse([
+        'id' => (int) $id,
+        'studentId' => $student_id,
+        'date' => $date,
+        'status' => $status,
+      ], 201);
     }
     catch (\Exception $e) {
       return new JsonResponse(['error' => $e->getMessage()], 500);
@@ -116,92 +115,46 @@ class AttendanceApiController extends ControllerBase {
   }
 
   /**
-   * Update attendance record.
+   * Update a single attendance record.
    */
   public function update($id, Request $request) {
-    $node = Node::load($id);
+    $db = \Drupal::database();
+    $existing = $db->select('school_system_attendance', 'a')
+      ->fields('a')
+      ->condition('a.id', (int) $id)
+      ->execute()
+      ->fetchObject();
 
-    if (!$node || $node->bundle() !== 'attendance') {
+    if (!$existing) {
       return new JsonResponse(['error' => 'Attendance not found'], 404);
     }
 
     $data = json_decode($request->getContent(), TRUE);
-
     if (!$data) {
       return new JsonResponse(['error' => 'Invalid JSON'], 400);
     }
 
     try {
+      $fields = [];
       if (isset($data['status'])) {
-        $node->set('field_status', $data['status']);
+        $fields['status'] = $data['status'];
       }
       if (isset($data['date'])) {
-        $node->set('field_date', $data['date']);
+        $fields['date'] = $data['date'];
       }
 
-      $node->save();
-
-      return new JsonResponse($this->formatAttendance($node));
-    }
-    catch (\Exception $e) {
-      return new JsonResponse(['error' => $e->getMessage()], 500);
-    }
-  }
-
-  /**
-   * Bulk update attendance records.
-   */
-  public function bulkUpdate(Request $request) {
-    $data = json_decode($request->getContent(), TRUE);
-
-    if (!$data || !is_array($data)) {
-      return new JsonResponse(['error' => 'Invalid JSON array'], 400);
-    }
-
-    $updated = 0;
-
-    try {
-      foreach ($data as $attendance_data) {
-        if (!isset($attendance_data['studentId']) || !isset($attendance_data['date'])) {
-          continue;
-        }
-
-        // Buscar si ya existe un registro para este estudiante y fecha
-        $query = \Drupal::entityQuery('node')
-          ->condition('type', 'attendance')
-          ->condition('field_student_ref', $attendance_data['studentId'])
-          ->condition('field_date', $attendance_data['date'])
-          ->accessCheck(FALSE);
-
-        $nids = $query->execute();
-
-        if (!empty($nids)) {
-          // Actualizar existente
-          $nid = reset($nids);
-          $node = Node::load($nid);
-          if ($node) {
-            $node->set('field_status', $attendance_data['status']);
-            $node->save();
-          }
-        }
-        else {
-          // Crear nuevo
-          $node = Node::create([
-            'type' => 'attendance',
-            'title' => 'Attendance ' . $attendance_data['date'],
-            'field_student_ref' => ['target_id' => $attendance_data['studentId']],
-            'field_date' => $attendance_data['date'],
-            'field_status' => $attendance_data['status'],
-          ]);
-          $node->save();
-        }
-
-        $updated++;
+      if (!empty($fields)) {
+        $db->update('school_system_attendance')
+          ->fields($fields)
+          ->condition('id', (int) $id)
+          ->execute();
       }
 
       return new JsonResponse([
-        'success' => TRUE,
-        'count' => $updated,
+        'id' => (int) $id,
+        'studentId' => (int) $existing->student_id,
+        'date' => $fields['date'] ?? $existing->date,
+        'status' => $fields['status'] ?? $existing->status,
       ]);
     }
     catch (\Exception $e) {
@@ -210,17 +163,62 @@ class AttendanceApiController extends ControllerBase {
   }
 
   /**
-   * Format attendance data for API response.
+   * Bulk upsert attendance records.
    */
-  private function formatAttendance($node) {
-    $student_ref = $node->get('field_student_ref')->target_id;
+  public function bulkUpdate(Request $request) {
+    $data = json_decode($request->getContent(), TRUE);
+    if (!$data || !is_array($data)) {
+      return new JsonResponse(['error' => 'Invalid JSON array'], 400);
+    }
 
-    return [
-      'id' => (int) $node->id(),
-      'studentId' => $student_ref ? (int) $student_ref : NULL,
-      'date' => $node->get('field_date')->value ?? '',
-      'status' => $node->get('field_status')->value ?? '',
-    ];
+    $db = \Drupal::database();
+    $count = 0;
+
+    try {
+      foreach ($data as $item) {
+        $student_id = (int) ($item['studentId'] ?? 0);
+        $date = $item['date'] ?? '';
+        $status = $item['status'] ?? 'present';
+
+        if (!$student_id || !$date) {
+          continue;
+        }
+
+        $db->merge('school_system_attendance')
+          ->keys([
+            'student_id' => $student_id,
+            'date' => $date,
+          ])
+          ->fields([
+            'status' => $status,
+            'created' => time(),
+          ])
+          ->execute();
+
+        $count++;
+      }
+
+      return new JsonResponse([
+        'success' => TRUE,
+        'count' => $count,
+      ]);
+    }
+    catch (\Exception $e) {
+      return new JsonResponse(['error' => $e->getMessage()], 500);
+    }
+  }
+
+  /**
+   * Get student node IDs that belong to a given course.
+   */
+  private function getStudentIdsByCourse(int $course_id): array {
+    $nids = \Drupal::entityQuery('node')
+      ->condition('type', 'student')
+      ->condition('field_course_ref', $course_id)
+      ->accessCheck(FALSE)
+      ->execute();
+
+    return array_map('intval', array_values($nids));
   }
 
 }

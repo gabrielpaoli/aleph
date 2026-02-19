@@ -97,12 +97,12 @@ const PeriodGradeManagement = () => {
       setSubjects(teacherSubjects);
 
       // Filtrar estudiantes por cursos del docente (si es docente)
-      if (user?.role === 'teacher' && teacherSubjects.length > 0) {
+      if (user?.role === 'docente' && teacherSubjects.length > 0) {
         const teacherCourseIds = new Set(
           teacherSubjects.map(subject => subject.courseId).filter(Boolean)
         );
         const filteredStudents = (studentsData || []).filter(student =>
-          teacherCourseIds.has(student.courseId)
+          teacherCourseIds.has(Number(student.courseId))
         );
         setStudents(filteredStudents);
       } else {
@@ -129,7 +129,7 @@ const PeriodGradeManagement = () => {
       
       if (filters.subjectId) {
         gradeFilters.subjectId = filters.subjectId;
-      } else if (user?.role === 'teacher' && user?.subjectIds?.length > 0) {
+      } else if (user?.role === 'docente' && user?.subjectIds?.length > 0) {
         // Si es docente, filtrar por sus materias
         gradeFilters.subjectIds = user.subjectIds.join(',');
       }
@@ -139,7 +139,15 @@ const PeriodGradeManagement = () => {
       }
 
       const data = await periodGradeService.getAll(gradeFilters);
-      setPeriodGrades(Array.isArray(data) ? data : []);
+      let gradesList = Array.isArray(data) ? data : [];
+
+      // Si es docente, filtrar la tabla para mostrar solo sus estudiantes
+      if (user?.role === 'docente' && user?.subjectIds?.length > 0) {
+        const teacherSubjectIdSet = new Set(user.subjectIds.map(Number));
+        gradesList = gradesList.filter(g => teacherSubjectIdSet.has(Number(g.subjectId)));
+      }
+
+      setPeriodGrades(gradesList);
     } catch (err) {
       console.error('❌ Error cargando period grades:', err);
       setErrorMessage('Error al cargar calificaciones de trimestre: ' + err.message);

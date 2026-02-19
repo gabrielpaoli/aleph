@@ -1,0 +1,4 @@
+administer whatsapp notifier:
+  title: 'Administrar configuración de WhatsApp Notifier'
+  description: 'Permite configurar las credenciales de Twilio para envío de WhatsApp.'
+  restrict access: true

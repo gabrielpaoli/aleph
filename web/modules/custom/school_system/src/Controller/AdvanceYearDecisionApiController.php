@@ -436,8 +436,13 @@ class AdvanceYearDecisionApiController extends ControllerBase {
    * Delete content related to a student.
    */
   private function deleteStudentRelatedContent($student_id) {
+    // Delete attendance from lightweight custom table.
+    \Drupal::database()->delete('school_system_attendance')
+      ->condition('student_id', (int) $student_id)
+      ->execute();
+
+    // Delete remaining node-based content types.
     $types = [
-      'attendance',
       'grade',
       'period_grade',
       'note',

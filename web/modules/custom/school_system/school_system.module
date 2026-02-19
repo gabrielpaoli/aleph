@@ -48,6 +48,22 @@ function school_system_mail($key, &$message, $params) {
       $message['body'][] = '';
       $message['body'][] = t('De: @author', ['@author' => $params['author_name'] ?? 'Docente']);
       break;
+
+    case 'password_reset':
+      $account = $params['account'];
+      $reset_url = $params['reset_url'];
+      $message['subject'] = t('Restablecer contraseña — Sistema Escolar');
+      $message['body'][] = t('Hola @name,', ['@name' => $account->getDisplayName()]);
+      $message['body'][] = '';
+      $message['body'][] = t('Recibimos una solicitud para restablecer la contraseña de tu cuenta.');
+      $message['body'][] = t('Hacé clic en el siguiente enlace para crear una nueva contraseña (válido por 24 horas):');
+      $message['body'][] = '';
+      $message['body'][] = $reset_url;
+      $message['body'][] = '';
+      $message['body'][] = t('Si no solicitaste este cambio, podés ignorar este correo.');
+      $message['body'][] = '';
+      $message['body'][] = t('— Sistema Escolar');
+      break;
   }
 }
 

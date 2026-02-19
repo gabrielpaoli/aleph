@@ -95,7 +95,7 @@ const GradeForm = () => {
       console.log('📥 Cargando estudiantes de Drupal...');
       const studentsData = await studentService.getAll();
       console.log('✅ Estudiantes cargados de Drupal:', studentsData);
-      setStudents(studentsData || []);
+      // Guardado provisoriamente; se filtra abajo si es docente
       
       // Cargar materias de Drupal
       console.log('📥 Cargando materias de Drupal...');
@@ -107,26 +107,31 @@ const GradeForm = () => {
       if (isTeacher && user?.subjectIds?.length > 0) {
         console.log('👨‍🏫 Docente detectado. Filtrando materias:', user.subjectIds);
         
-        // Filtrar materias del docente
+        // Filtrar materias del docente (comparación numérica segura)
+        const teacherSubjectIdSet = new Set(user.subjectIds.map(Number));
         const teacherSubjects = (subjectsData || []).filter(subject =>
-          user.subjectIds.includes(subject.id)
+          teacherSubjectIdSet.has(Number(subject.id))
         );
         console.log('✅ Materias del docente:', teacherSubjects);
         setSubjects(teacherSubjects);
         
         // Obtener cursos únicos del docente
         const courses = await courseService.getAll();
-        const coursesSet = new Set();
-        teacherSubjects.forEach(subject => {
-          if (subject.courseId) {
-            coursesSet.add(subject.courseId);
-          }
-        });
-        const teacherCourseIds = Array.from(coursesSet);
-        const teacherCoursesList = courses.filter(c => teacherCourseIds.includes(c.id));
+        const teacherCourseIdSet = new Set(
+          teacherSubjects.map(s => Number(s.courseId)).filter(Boolean)
+        );
+        const teacherCoursesList = courses.filter(c => teacherCourseIdSet.has(Number(c.id)));
         console.log('✅ Cursos del docente:', teacherCoursesList);
-        setTeacherCourses(teacherCourseIds);
+        setTeacherCourses(Array.from(teacherCourseIdSet));
+
+        // Filtrar estudiantes: solo los que pertenecen a algún curso del docente
+        const filteredStudents = (studentsData || []).filter(s =>
+          teacherCourseIdSet.has(Number(s.courseId))
+        );
+        console.log('✅ Estudiantes del docente:', filteredStudents.length, 'de', (studentsData || []).length);
+        setStudents(filteredStudents);
       } else {
+        setStudents(studentsData || []);
         setSubjects(subjectsData || []);
         setTeacherCourses([]);
       }

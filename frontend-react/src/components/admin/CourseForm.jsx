@@ -15,6 +15,7 @@ const CourseForm = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
+  const [search, setSearch] = useState('');
 
   const ITEMS_PER_PAGE = 10;
 
@@ -108,6 +109,13 @@ const CourseForm = () => {
     setEditingId(null);
     setErrorMessage('');
   };
+
+  const filteredCourses = courses.filter(c => {
+    const q = search.toLowerCase();
+    return !q || c.name?.toLowerCase().includes(q) || c.shift?.toLowerCase().includes(q);
+  });
+  const pageCount  = Math.ceil(filteredCourses.length / ITEMS_PER_PAGE);
+  const pageCourses = filteredCourses.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
   if (loading) {
     return (
@@ -203,6 +211,18 @@ const CourseForm = () => {
         </div>
       </form>
 
+      {/* Buscador */}
+      <div className="mb-4 flex items-center gap-3">
+        <input
+          type="text"
+          placeholder="🔍 Buscar por nombre o turno…"
+          value={search}
+          onChange={e => { setSearch(e.target.value); setCurrentPage(0); }}
+          className="w-full sm:max-w-xs border-2 border-slate-300 p-2 rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
+        />
+        <span className="text-sm text-slate-500">{filteredCourses.length} curso{filteredCourses.length !== 1 ? 's' : ''}</span>
+      </div>
+
       {/* Tabla de cursos */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
@@ -215,14 +235,14 @@ const CourseForm = () => {
             </tr>
           </thead>
           <tbody>
-            {courses.length === 0 ? (
+            {filteredCourses.length === 0 ? (
               <tr>
                 <td colSpan="3" className="text-center p-6 text-slate-500">
                   No hay cursos disponibles
                 </td>
               </tr>
             ) : (
-              courses.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE).map(course => (
+              pageCourses.map(course => (
                 <tr key={course.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
                   <td className="p-4">{course.name}</td>
                   <td className="p-4">{course.shift}</td>
@@ -252,7 +272,7 @@ const CourseForm = () => {
         </div>
 
         {/* Paginación */}
-        {courses.length > ITEMS_PER_PAGE && (
+        {pageCount > 1 && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-t border-slate-200 bg-slate-50">
             <button
               onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
@@ -262,11 +282,11 @@ const CourseForm = () => {
               ← Anterior
             </button>
             <span className="text-sm font-semibold text-slate-600">
-              Página {currentPage + 1} de {Math.ceil(courses.length / ITEMS_PER_PAGE)}
+              Página {currentPage + 1} de {pageCount}
             </span>
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage >= Math.ceil(courses.length / ITEMS_PER_PAGE) - 1}
+              disabled={currentPage >= pageCount - 1}
               className="px-4 py-2 bg-slate-300 text-slate-700 rounded font-semibold hover:bg-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Siguiente →
