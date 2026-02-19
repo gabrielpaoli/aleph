@@ -1,7 +1,7 @@
 // src/App.jsx
 
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/common/Login';
 import Navbar from './components/common/Navbar';
@@ -11,6 +11,7 @@ import StudentDashboard from './components/parent/StudentDashboard';
 import StudentProfile from './components/student/StudentProfile';
 import AdminPanel from './components/admin/AdminPanel';
 import ProfileSettings from './components/common/ProfileSettings';
+import ResetPassword from './components/common/ResetPassword';
 
 const PrivateRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
@@ -28,6 +29,12 @@ const PrivateRoute = ({ children, allowedRoles }) => {
 
 const AppRoutes = () => {
   const { user } = useAuth();
+  const location = useLocation();
+
+  // Public route: accessible without login
+  if (location.pathname === '/reset-password') {
+    return <ResetPassword />;
+  }
 
   if (!user) {
     return <Login />;

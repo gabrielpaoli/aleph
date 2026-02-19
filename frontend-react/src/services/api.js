@@ -617,6 +617,32 @@ export const authService = {
       console.error('Change password error:', error);
       throw error;
     }
+  },
+
+  forgotPassword: async (email) => {
+    if (USE_DUMMY_DATA) {
+      return Promise.resolve({ success: true, message: 'Si el correo existe en el sistema, recibirás un enlace para restablecer tu contraseña.' });
+    }
+    try {
+      const response = await api.post('/api/auth/forgot-password', { email });
+      return response.data;
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      throw error;
+    }
+  },
+
+  resetPassword: async (uid, timestamp, hash, newPassword) => {
+    if (USE_DUMMY_DATA) {
+      return Promise.resolve({ success: true, message: 'Contraseña actualizada correctamente. Ya podés iniciar sesión.' });
+    }
+    try {
+      const response = await api.post('/api/auth/reset-password', { uid, timestamp, hash, newPassword });
+      return response.data;
+    } catch (error) {
+      console.error('Reset password error:', error);
+      throw error;
+    }
   }
 };
 

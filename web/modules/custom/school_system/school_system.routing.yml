@@ -297,6 +297,22 @@ school_system.api.auth.change_password:
   requirements:
     _user_is_logged_in: 'TRUE'
 
+school_system.api.auth.forgot_password:
+  path: '/api/auth/forgot-password'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\AuthApiController::forgotPassword'
+  methods: [POST]
+  requirements:
+    _access: 'TRUE'
+
+school_system.api.auth.reset_password:
+  path: '/api/auth/reset-password'
+  defaults:
+    _controller: '\Drupal\school_system\Controller\AuthApiController::resetPassword'
+  methods: [POST]
+  requirements:
+    _access: 'TRUE'
+
 school_system.api.debug.session:
   path: '/api/debug/session'
   defaults:
